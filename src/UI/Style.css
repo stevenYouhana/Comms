@@ -1,0 +1,8 @@
+.GridPane {
+    -fx-background-color: red;
+    -fx-padding: 15;
+    -fx-spacing: 10;
+}
+.button {
+    -fx-background-color: #587272;
+}
