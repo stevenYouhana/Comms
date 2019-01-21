@@ -14,6 +14,8 @@ import Handler.Popup;
 import com.fazecast.jSerialComm.SerialPort;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -108,12 +110,22 @@ public class FXMLDocumentController implements Initializable {
        
         
         new Thread(() -> {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
+            }
             Refresh refresh = new Refresh();
+            //TESTING
             serial = new Serial();
-            serial.setComPort("COM3");
+            serial.setComPort("COM6");
+            serial.getPort().setBaudRate(9600);
             serial.getPort().openPort();
             while (!Comms.MainWindowClosed) {
-                //TEST READER
+                
+                serial.getPort().writeBytes("HELLO PORT".getBytes(), 100);
+                
+//TEST READER
 //                if (serial.getPort() != null && serial.getPort().isOpen()) {
 //                    log.l("reading:");
 //                    log.l(serial.getOutput());
@@ -122,7 +134,7 @@ public class FXMLDocumentController implements Initializable {
 try
 {
    for (int j = 0; j < 1000; ++j)
-       System.out.println("getIS");
+//       System.out.println("getIS");
        System.out.print((char)in.read());
    in.close();
 } catch (Exception e) { e.printStackTrace(); }
