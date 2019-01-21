@@ -12,6 +12,7 @@ import javafx.scene.control.Label;
 import Com.Serial;
 import Handler.Popup;
 import com.fazecast.jSerialComm.SerialPort;
+import java.io.InputStream;
 import java.util.Collections;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -39,7 +40,9 @@ public class FXMLDocumentController implements Initializable {
     
     @FXML
     private TextField txtCommand;
-    
+//    @FXML
+//    private TextField txtOutput;
+//    
     @FXML
     private void onAction() {
         System.out.println("ON> "+serial.TX(Commands.ONKYO_ON));
@@ -83,6 +86,13 @@ public class FXMLDocumentController implements Initializable {
             serial.pushCommand(txtCommand.getText());
         
         log.l("PUSH finished");
+        
+    }
+    private String getOutput() {
+        String string = null;
+        
+        
+        return string;
     }
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -95,11 +105,28 @@ public class FXMLDocumentController implements Initializable {
         }
         Collections.reverse(availablePorts);
         cboComs.setItems(availablePorts);
-        
+       
         
         new Thread(() -> {
             Refresh refresh = new Refresh();
-            while (true) {
+            serial = new Serial();
+            serial.setComPort("COM3");
+            serial.getPort().openPort();
+            while (!Comms.MainWindowClosed) {
+                //TEST READER
+//                if (serial.getPort() != null && serial.getPort().isOpen()) {
+//                    log.l("reading:");
+//                    log.l(serial.getOutput());
+//                }
+                InputStream in = serial.getPort().getInputStream();
+try
+{
+   for (int j = 0; j < 1000; ++j)
+       System.out.println("getIS");
+       System.out.print((char)in.read());
+   in.close();
+} catch (Exception e) { e.printStackTrace(); }
+
                 log.l("start innit Thread(())");
                 refresh.start();
                 if (refresh.getNewPorts() != null) {
@@ -114,6 +141,7 @@ public class FXMLDocumentController implements Initializable {
             cboComs.setItems(availablePorts);
                 }
             }
+            log.l("main Thread: "+Comms.getCurrentThread().isAlive());
             
         }).start();
         System.out.println("FXMLDocumentController initialize");

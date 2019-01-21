@@ -1,18 +1,20 @@
 package Com;
 
-
-
 import Handler.Popup;
 import com.fazecast.jSerialComm.*;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Timer;
 
 public class Serial {
     Log log = new Log();
     SerialPort[] comPorts;
     SerialPort comPort;
-    int baudRate = 9600;
+    int baudRate;
     byte[] command;
     public static int numbetOfPorts = 0;
     Popup popup;
+    
     
     public Serial(String port, int baudRate) {
         this.comPort = selectedCom(port);
@@ -40,11 +42,24 @@ public class Serial {
     public byte[] TX(String command) {
         return command.getBytes();
     }
+    public SerialPort getPort() {
+        return comPort;
+    }
+    private void closePort(int sec) {
+        log.l("about to close");
+        Timer timer = new Timer();
+        timer.schedule(new java.util.TimerTask() {
+            @Override
+            public void run() {
+                log.l("closing port"); 
+                comPort.closePort();
+            }
+        }, sec);
+    }
     public void pushCommand(String command) {
         try {
         comPort.openPort();
         comPort.writeBytes(command.getBytes(), command.length());
-        comPort.closePort();
         } catch (NullPointerException npe) {
             log.l("pushCommand ERR npe: " + npe.getCause());
         }
@@ -52,7 +67,24 @@ public class Serial {
             log.l("pushCommand() ERR e: "+e.getCause());
             popup.infoAlert("Serial error!", "check if you have selected a valid COM port");
         }
-        
+        finally {
+            if (comPort != null && comPort.isOpen()) closePort(5);
+        }
+    }
+    public String getOutput() {
+//        OutputStream output = new OutputStream() {
+//        private StringBuilder string = new StringBuilder();
+//        @Override
+//        public void write(int b) throws IOException {
+//            this.string.append((char) b );
+//        }
+//        public String toString(){
+//            return this.string.toString();
+//        }
+//    };
+        byte[] bytes = null;
+        comPort.readBytes(bytes, 1000);
+        return bytes.toString();
     }
     
     private SerialPort selectedCom(String port) {

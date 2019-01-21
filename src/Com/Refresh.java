@@ -34,7 +34,6 @@ public class Refresh extends Thread {
             });
               Executor executor = Executors.newSingleThreadScheduledExecutor();              
               executor.execute(task);
-              //while(true) {
                 try {
                     log.l("try task.get");
                     task.get(3, TimeUnit.SECONDS);
@@ -42,7 +41,6 @@ public class Refresh extends Thread {
                 catch(InterruptedException | ExecutionException | TimeoutException ex) {
                     log.l("Refresh.start.task err ex "+ex.getStackTrace());
                 }
-              //}
         }
     
 }
