@@ -3,6 +3,7 @@ package UI;
 
 import Com.Commands;
 import Com.Log;
+import Com.Read;
 import Com.Refresh;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -10,6 +11,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import Com.Serial;
+import Handler.Delay;
 import Handler.Popup;
 import com.fazecast.jSerialComm.SerialPort;
 import java.io.InputStream;
@@ -28,6 +30,7 @@ import javafx.scene.control.TextField;
 public class FXMLDocumentController implements Initializable {
     Serial serial;
     String port = null;
+    ObservableList<String> availablePorts = FXCollections.observableArrayList();
     Log log = new Log();
     Popup popup;
     
@@ -42,9 +45,9 @@ public class FXMLDocumentController implements Initializable {
     
     @FXML
     private TextField txtCommand;
-//    @FXML
-//    private TextField txtOutput;
-//    
+    @FXML
+    private TextField txtOutput;
+    
     @FXML
     private void onAction() {
         System.out.println("ON> "+serial.TX(Commands.ONKYO_ON));
@@ -74,6 +77,7 @@ public class FXMLDocumentController implements Initializable {
             }
             serial = new Serial(selectedPort,
                     Integer.parseInt(txtBaud.getText()));
+            serial.pushCommand(txtCommand.getText());
         } 
         catch (NumberFormatException nfe) {
             log.l("push error nfe: "+nfe.getStackTrace());
@@ -83,81 +87,74 @@ public class FXMLDocumentController implements Initializable {
             log.l("push error: "+e.getStackTrace()+e.getCause());
             popup.infoAlert("Error!", e.getStackTrace().toString());
         }
+        finally {
+            serial.closePort(3);
             log.l("finally reached");
             log.l(serial.TX(txtCommand.getText()).toString());
-            serial.pushCommand(txtCommand.getText());
-        
-        log.l("PUSH finished");
-        
+            
+        }
     }
-    private String getOutput() {
-        String string = null;
-        
-        
-        return string;
-    }
-    @Override
-    public void initialize(URL url, ResourceBundle rb) {
-        
-        serial = new Serial();
-        popup = new Popup();
-        ObservableList<String> availablePorts = FXCollections.observableArrayList();
+    public void populatePorts() {
         for (SerialPort port : serial.getAvailabePorts()) {
             availablePorts.add(port.getSystemPortName());
         }
         Collections.reverse(availablePorts);
         cboComs.setItems(availablePorts);
+    }
+    public void clearPorts() {
+        Platform.runLater(() -> {
+            availablePorts.clear();
+        });
+        
+    }
+    void refreshPorts() {
+//        log.l("refreshPorts()");
+        Refresh refresh = new Refresh();
+        Delay delay = new Delay();
+        delay.by(1000, () -> {
+            refresh.start();
+        });
+//        refresh.start();
+        if (refresh.getNewPorts() != null) {
+            if (cboComs.getItems().size() != refresh.getNewPorts().length) {
+                Platform.runLater(() -> {
+                    log.l(refresh.getNewPorts()[0].getPortDescription());
+                    clearPorts();
+                    for (SerialPort port : refresh.getNewPorts()) {
+                        availablePorts.add(port.getSystemPortName());
+                    }
+                });
+            }
+            cboComs.setItems(availablePorts);
+            
+        }
+    }
+    @Override
+    public void initialize(URL url, ResourceBundle rb) {
+//        serial = new Serial();
+//        popup = new Popup();
+        serial = null;
+        class Manage {
+            private Serial serial;
+            Manage(Serial serial) {
+                this.serial = serial;
+            }
+            public boolean isInit() {
+                log.l(this.serial != null);
+                log.l(this.serial.getPort() != null);
+                return this.serial != null && this.serial.getPort() != null 
+                        ?true :false; 
+            }
+        }
        
         
         new Thread(() -> {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            Refresh refresh = new Refresh();
-            //TESTING
-            serial = new Serial();
-            serial.setComPort("COM6");
-            serial.getPort().setBaudRate(9600);
-            serial.getPort().openPort();
             while (!Comms.MainWindowClosed) {
-                
-                serial.getPort().writeBytes("HELLO PORT".getBytes(), 100);
-                
-//TEST READER
-//                if (serial.getPort() != null && serial.getPort().isOpen()) {
-//                    log.l("reading:");
-//                    log.l(serial.getOutput());
-//                }
-                InputStream in = serial.getPort().getInputStream();
-try
-{
-   for (int j = 0; j < 1000; ++j)
-//       System.out.println("getIS");
-       System.out.print((char)in.read());
-   in.close();
-} catch (Exception e) { e.printStackTrace(); }
-
-                log.l("start innit Thread(())");
-                refresh.start();
-                if (refresh.getNewPorts() != null) {
-                    if (cboComs.getItems().size() != refresh.getNewPorts().length) {
-                        Platform.runLater(() -> {
-                            availablePorts.clear();
-                            for (SerialPort port : refresh.getNewPorts()) {
-                                availablePorts.add(port.getSystemPortName());
-                            }
-                        });
-                }
-            cboComs.setItems(availablePorts);
-                }
-            }
-            log.l("main Thread: "+Comms.getCurrentThread().isAlive());
-            
+                refreshPorts();
+            }     
         }).start();
+
         System.out.println("FXMLDocumentController initialize");
-        
         serial = null;
     }    
     

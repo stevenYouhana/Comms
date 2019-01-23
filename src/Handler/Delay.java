@@ -11,14 +11,28 @@ public class Delay {
     Timer timer = new Timer();
     Log log = new Log();
 
-    
-    public void by(int sec, Callable<Void> func) {
+        
+    public void by(int sec, Callable<Boolean> func) {
+        timer.schedule(new java.util.TimerTask() {
+            @Override
+            public void run() {
+                log.l("delaying by "+sec);
+                try {   
+                    log.l("running "+func);
+                    func.call();
+                } catch (Exception ex) {
+                    log.l("Err delay run");
+                }
+            }
+        }, sec);
+    }
+    public void by(int sec, Runnable func) {
         timer.schedule(new java.util.TimerTask() {
             @Override
             public void run() {
                 log.l("delaying by "+sec);
                 try {
-                    func.call();
+                    func.run();
                 } catch (Exception ex) {
                     log.l("Err delay run");
                 }
