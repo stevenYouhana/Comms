@@ -1,25 +1,40 @@
 package Com;
 
+import Handler.Delay;
+import Handler.IDelay;
 import Handler.Popup;
 import com.fazecast.jSerialComm.*;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Timer;
+import java.util.concurrent.Callable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Serial {
     Log log = new Log();
-    SerialPort[] comPorts;
+    public static SerialPort[] availablePorts;
     SerialPort comPort;
-    int baudRate;
+    int baudRate = 0;
+    public final int DEFAULT_BAUD = 9600;
     byte[] command;
-    public static int numbetOfPorts = 0;
     Popup popup;
+    Delay delay;
     
+    static {
+        availablePorts = SerialPort.getCommPorts();
+    }
     
     public Serial(String port, int baudRate) {
         this.comPort = selectedCom(port);
         this.baudRate = baudRate;
         popup = new Popup();
+    }
+    public Serial(String port) {
+        this(port, 9600);
+    }
+    public Serial(Runnable task) {
+        task.run();
     }
     public Serial() {}
     
@@ -28,13 +43,10 @@ public class Serial {
         log.l("port set to "+port);
         log.l("SET PORT TO: "+comPort.getSystemPortName());
     }
-    public SerialPort[] getAvailabePorts() {
-        this.comPorts = SerialPort.getCommPorts();
-        numbetOfPorts = comPorts.length;
-        return comPorts;
-    }
+    
     public void setBaudRate(int baudRate) {
         this.baudRate = baudRate;
+        if (this.comPort != null) comPort.setBaudRate(baudRate);
     }
     public void setCommand(String command) {
         this.command = command.getBytes();
@@ -45,16 +57,14 @@ public class Serial {
     public SerialPort getPort() {
         return comPort;
     }
-    private void closePort(int sec) {
-        log.l("about to close");
-        Timer timer = new Timer();
-        timer.schedule(new java.util.TimerTask() {
-            @Override
-            public void run() {
-                log.l("closing port"); 
+    public void closePort(int sec) {
+        log.l("closePort(int sec)");
+            delay = new Delay();
+            delay.by(sec, () -> {
                 comPort.closePort();
-            }
-        }, sec);
+                log.l("port closed");
+            });
+    
     }
     public void pushCommand(String command) {
         try {
@@ -71,21 +81,7 @@ public class Serial {
             if (comPort != null && comPort.isOpen()) closePort(5);
         }
     }
-    public String getOutput() {
-//        OutputStream output = new OutputStream() {
-//        private StringBuilder string = new StringBuilder();
-//        @Override
-//        public void write(int b) throws IOException {
-//            this.string.append((char) b );
-//        }
-//        public String toString(){
-//            return this.string.toString();
-//        }
-//    };
-        byte[] bytes = null;
-        comPort.readBytes(bytes, 1000);
-        return bytes.toString();
-    }
+
     
     private SerialPort selectedCom(String port) {
         SerialPort[] availablePorts = SerialPort.getCommPorts();
@@ -98,31 +94,5 @@ public class Serial {
     public String toString() {
         return comPort.getPortDescription();
     }
-    public void init() {
-        log.l("Com project:");
-        log.l(comPort.getDescriptivePortName());
-        log.l(comPort.getPortDescription());
-        log.l(comPort.getSystemPortName());
-        byte[] buffer = {'a','b','c'};
-       
-        String line = "from java Com class";
-        log.l("writing "+buffer);
-        comPort.setBaudRate(baudRate);
-        comPort.openPort();
-        int count = 0;
-
-        while (count < 100) {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException ie) {
-                log.l("Thread interrupted: "+ie.getStackTrace());
-            }
-            log.l("writing");
-           
-            comPort.writeBytes(line.getBytes(), line.getBytes().length);
-            
-            count++;
-        }
-        comPort.closePort();
-    }
+    
 }

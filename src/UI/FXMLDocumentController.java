@@ -3,6 +3,7 @@ package UI;
 
 import Com.Commands;
 import Com.Log;
+import Com.Read;
 import Com.Refresh;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -10,15 +11,26 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import Com.Serial;
+import Handler.Delay;
+import Handler.MultiThread.ATask;
+import Handler.MultiThread.PerformTask;
+import Handler.MultiThread.TaskManager;
 import Handler.Popup;
 import com.fazecast.jSerialComm.SerialPort;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 /**
@@ -26,10 +38,12 @@ import javafx.scene.control.TextField;
  * @author steven.youhana
  */
 public class FXMLDocumentController implements Initializable {
-    Serial serial;
+    Serial serial = new Serial();
     String port = null;
+    ObservableList<String> availablePorts = FXCollections.observableArrayList();
     Log log = new Log();
-    Popup popup;
+    Popup popup = new Popup();
+    public final static Object closingLock = new Object();
     
     @FXML
     private ComboBox<String> cboComs;
@@ -42,9 +56,9 @@ public class FXMLDocumentController implements Initializable {
     
     @FXML
     private TextField txtCommand;
-//    @FXML
-//    private TextField txtOutput;
-//    
+    @FXML
+    private TextField txtOutput;
+    
     @FXML
     private void onAction() {
         System.out.println("ON> "+serial.TX(Commands.ONKYO_ON));
@@ -56,6 +70,42 @@ public class FXMLDocumentController implements Initializable {
         lblPort.setText("OFF");
     }
     @FXML
+    private void setParams() {
+        log.l("setParams()");
+        Delay delay = new Delay();
+        synchronized(serial){
+            serial = new Serial(() -> {
+            if (cboComs.getSelectionModel().getSelectedIndex() != -1) {
+                String selectedPort = cboComs.getSelectionModel().getSelectedItem();
+                serial = new Serial(selectedPort);
+            }
+            if (!txtBaud.getText().isEmpty()) {
+                try {
+                    serial.setBaudRate(Integer.parseInt(txtBaud.getText()));
+                    popup.infoAlert("Info!", "Success");
+                    delay.by(1000, () -> {
+                        log.l("closing");
+                        Platform.runLater( () -> {
+                            popup.close();
+                        });
+                    });
+                } catch (NumberFormatException nfe) {
+                    popup.infoAlert("Baudrate error!", "Integer expected!");
+                }
+                
+            }
+            if (serial.getPort() != null) {
+                serial.getPort().openPort();
+//                serial.getPort().setComPortTimeouts(
+//                        SerialPort.TIMEOUT_NONBLOCKING,
+//                        20000, 20000);
+            }
+        });
+
+        }
+    }
+    
+    @FXML
     private void push() {
         log.l("PUSH");
         String selectedPort = cboComs.getSelectionModel().getSelectedItem();
@@ -65,6 +115,7 @@ public class FXMLDocumentController implements Initializable {
             if (selectedPort == null || selectedPort.isEmpty() || selectedPort.equals("choose..")) {
                 log.l("NO PORT SELECTED");
                 popup.infoAlert("Port error!", "Select a port");
+             
                 return;
             }
             if (txtBaud.getText().isEmpty()) {
@@ -72,96 +123,112 @@ public class FXMLDocumentController implements Initializable {
                 popup.infoAlert("Baudrate error!", "Set baudrate");
                 return;
             }
-            serial = new Serial(selectedPort,
+            synchronized(serial) {
+                serial = new Serial(selectedPort,
                     Integer.parseInt(txtBaud.getText()));
+            serial.pushCommand(txtCommand.getText());
+            }
+            
         } 
         catch (NumberFormatException nfe) {
             log.l("push error nfe: "+nfe.getStackTrace());
-            popup.infoAlert("Baudrate error!", "integer expected");
+            popup.infoAlert("Baudrate error!", "Integer expected");
         }
         catch(Exception e) {
             log.l("push error: "+e.getStackTrace()+e.getCause());
             popup.infoAlert("Error!", e.getStackTrace().toString());
+            
         }
+        finally {
+            if (serial != null) {
+                serial.closePort(30000);
+                
             log.l("finally reached");
             log.l(serial.TX(txtCommand.getText()).toString());
-            serial.pushCommand(txtCommand.getText());
+            
+            } else return;
+        }
+    }
+    private void refreshPorts() {
+        clearPorts();
         
-        log.l("PUSH finished");
+        for (SerialPort port : SerialPort.getCommPorts()) {
+          Platform.runLater(() -> {
+              availablePorts.add(port.getSystemPortName());
+          });
+            
+            Serial.availablePorts = SerialPort.getCommPorts();
+        }
+        Platform.runLater(() -> {
+            Collections.reverse(availablePorts); 
+        });
+
+        cboComs.setItems(availablePorts);
+    }
+    private void clearPorts() {
+        Platform.runLater(() -> {
+            availablePorts.clear();
+        });
         
     }
-    private String getOutput() {
-        String string = null;
         
-        
-        return string;
-    }
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        
-        serial = new Serial();
-        popup = new Popup();
-        ObservableList<String> availablePorts = FXCollections.observableArrayList();
-        for (SerialPort port : serial.getAvailabePorts()) {
-            availablePorts.add(port.getSystemPortName());
-        }
-        Collections.reverse(availablePorts);
-        cboComs.setItems(availablePorts);
-       
-        
-        new Thread(() -> {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            Refresh refresh = new Refresh();
-            
-            //TESTING
-            serial = new Serial();
-            serial.setComPort("COM6");
-            serial.getPort().setBaudRate(9600);
-            serial.getPort().openPort();
-            if (serial.getPort() != null) {
-                while (!Comms.MainWindowClosed) {
-                
-                    serial.getPort().writeBytes("HELLO PORT".getBytes(), 100);
+        ExecutorService executor = Executors.newFixedThreadPool(5);
 
-    //TEST READER
-    //                if (serial.getPort() != null && serial.getPort().isOpen()) {
-    //                    log.l("reading:");
-    //                    log.l(serial.getOutput());
-    //                }
-                    InputStream in = serial.getPort().getInputStream();
-                    try
-                    {
-                       for (int j = 0; j < 1000; ++j)
-                    //       System.out.println("getIS");
-                           System.out.print((char)in.read());
-                       in.close();
-                    } catch (Exception e) { e.printStackTrace(); }
+        // Runnable, return void, nothing, submit and run the task async
+        executor.submit(() -> {
+            log.l("first task (Runnable)");
+//            serial = new Serial();
+            while (!Comms.MainWindowClosed) {
+                if (availablePorts.size() <= 0) {
+                    refreshPorts();
+                }
+                else if (Serial.availablePorts.length != 
+                        SerialPort.getCommPorts().length) {
+                    log.l("refreshing ports");
+                    refreshPorts();
+                }
+            }     
+        });
 
-                    log.l("start innit Thread(())");
-                    refresh.start();
-                    if (refresh.getNewPorts() != null) {
-                        if (cboComs.getItems().size() != refresh.getNewPorts().length) {
-                            Platform.runLater(() -> {
-                                availablePorts.clear();
-                                for (SerialPort port : refresh.getNewPorts()) {
-                                    availablePorts.add(port.getSystemPortName());
-                                }
-                            });
+        
+        Future<Integer> futureTask1 = executor.submit(() -> {
+            System.out.println("Callable READ:");
+            Read read;
+            while (!Comms.MainWindowClosed) { 
+                if (serial != null) {
+//                    log.l("serial INIT");
+                    if (serial.getPort() != null) {
+                        log.l("reading...");
+                        read = new Read(serial.getPort());
+                        log.l(read.output());
                     }
-                cboComs.setItems(availablePorts);
                 }
             }
-        } else log.l("port NULL");
-            log.l("main Thread: "+Comms.getCurrentThread().isAlive());
-            
-        }).start();
-        System.out.println("FXMLDocumentController initialize");
+            return 1 + 1;
+        });
         
-        serial = null;
+        Future<Void> atClose = executor.submit(() -> {
+            log.l("atClose()");
+            while (!Comms.MainWindowClosed) {
+                
+                synchronized(closingLock) {
+                    log.l("wait()");
+                    closingLock.wait();
+                }
+                
+            }
+            log.l("shuting all threads down");
+            futureTask1.cancel(true);
+            executor.shutdown();
+            Platform.exit();
+            return null;
+        });
+        log.l("Before Future Result");
+        log.l("After Future Result");
+        System.out.println("FXMLDocumentController initialize");
+//        serial = null;
     }    
     
 }

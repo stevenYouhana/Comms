@@ -16,9 +16,13 @@
         <Button text="OFF" onAction="#offAction" fx:id="off" GridPane.columnIndex="1" GridPane.rowIndex="1" />
         <Label fx:id="lblBaud" text="baud rate:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
         <TextField fx:id="txtBaud" promptText="9600"  GridPane.columnIndex="1" GridPane.rowIndex="2" /> 
+        <Button text="Set params" onAction="#setParams" fx:id="btnSetParams" GridPane.columnIndex="3" GridPane.rowIndex="1" />
         <Label fx:id="lblCommand" text="commmand:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
         <TextField fx:id="txtCommand" GridPane.columnIndex="1" GridPane.rowIndex="3" />
         <Button fx:id="btnPush" text="Push" onAction="#push" GridPane.columnIndex="1" GridPane.rowIndex="4" prefWidth="150"  />
-        <TextArea fx:id="txtOutput" GridPane.columnIndex="1" GridPane.rowIndex="5" wrapText="true" editable="false" promptText="output..." />
+
+        <!--<TextArea fx:id="txtOutput" GridPane.columnIndex="1" GridPane.rowIndex="5" wrapText="true" editable="false" promptText="output..." /> -->
+
+
         
 </GridPane>
