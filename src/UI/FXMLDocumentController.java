@@ -116,43 +116,46 @@ public class FXMLDocumentController implements Initializable {
                 Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
             }
             Refresh refresh = new Refresh();
+            
             //TESTING
             serial = new Serial();
             serial.setComPort("COM6");
             serial.getPort().setBaudRate(9600);
             serial.getPort().openPort();
-            while (!Comms.MainWindowClosed) {
+            if (serial.getPort() != null) {
+                while (!Comms.MainWindowClosed) {
                 
-                serial.getPort().writeBytes("HELLO PORT".getBytes(), 100);
-                
-//TEST READER
-//                if (serial.getPort() != null && serial.getPort().isOpen()) {
-//                    log.l("reading:");
-//                    log.l(serial.getOutput());
-//                }
-                InputStream in = serial.getPort().getInputStream();
-try
-{
-   for (int j = 0; j < 1000; ++j)
-//       System.out.println("getIS");
-       System.out.print((char)in.read());
-   in.close();
-} catch (Exception e) { e.printStackTrace(); }
+                    serial.getPort().writeBytes("HELLO PORT".getBytes(), 100);
 
-                log.l("start innit Thread(())");
-                refresh.start();
-                if (refresh.getNewPorts() != null) {
-                    if (cboComs.getItems().size() != refresh.getNewPorts().length) {
-                        Platform.runLater(() -> {
-                            availablePorts.clear();
-                            for (SerialPort port : refresh.getNewPorts()) {
-                                availablePorts.add(port.getSystemPortName());
-                            }
-                        });
-                }
-            cboComs.setItems(availablePorts);
+    //TEST READER
+    //                if (serial.getPort() != null && serial.getPort().isOpen()) {
+    //                    log.l("reading:");
+    //                    log.l(serial.getOutput());
+    //                }
+                    InputStream in = serial.getPort().getInputStream();
+                    try
+                    {
+                       for (int j = 0; j < 1000; ++j)
+                    //       System.out.println("getIS");
+                           System.out.print((char)in.read());
+                       in.close();
+                    } catch (Exception e) { e.printStackTrace(); }
+
+                    log.l("start innit Thread(())");
+                    refresh.start();
+                    if (refresh.getNewPorts() != null) {
+                        if (cboComs.getItems().size() != refresh.getNewPorts().length) {
+                            Platform.runLater(() -> {
+                                availablePorts.clear();
+                                for (SerialPort port : refresh.getNewPorts()) {
+                                    availablePorts.add(port.getSystemPortName());
+                                }
+                            });
+                    }
+                cboComs.setItems(availablePorts);
                 }
             }
+        } else log.l("port NULL");
             log.l("main Thread: "+Comms.getCurrentThread().isAlive());
             
         }).start();

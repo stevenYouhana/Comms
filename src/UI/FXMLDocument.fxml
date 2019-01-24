@@ -19,6 +19,6 @@
         <Label fx:id="lblCommand" text="commmand:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
         <TextField fx:id="txtCommand" GridPane.columnIndex="1" GridPane.rowIndex="3" />
         <Button fx:id="btnPush" text="Push" onAction="#push" GridPane.columnIndex="1" GridPane.rowIndex="4" prefWidth="150"  />
-        <!--<TextArea fx:id="txtOutput" GridPane.columnIndex="1" GridPane.rowIndex="4"/> -->
+        <TextArea fx:id="txtOutput" GridPane.columnIndex="1" GridPane.rowIndex="5" wrapText="true" editable="false" promptText="output..." />
         
 </GridPane>
