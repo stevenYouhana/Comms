@@ -14,13 +14,15 @@ import Com.Serial;
 import Handler.Delay;
 import Handler.Popup;
 import com.fazecast.jSerialComm.SerialPort;
-import java.io.InputStream;
 import java.util.Collections;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 /**
@@ -28,11 +30,16 @@ import javafx.scene.control.TextField;
  * @author steven.youhana
  */
 public class FXMLDocumentController implements Initializable {
-    Serial serial;
+    public volatile static Serial serial = new Serial();
     String port = null;
     ObservableList<String> availablePorts = FXCollections.observableArrayList();
     Log log = new Log();
-    Popup popup;
+    Popup popup = new Popup();
+    ExecutorService executor;
+    public final static Object closingLock = new Object();
+    static final Object serialLock = new Object();
+    volatile String selectedPort = null;
+    volatile boolean portBeingUsed = false;
     
     @FXML
     private ComboBox<String> cboComs;
@@ -58,104 +65,181 @@ public class FXMLDocumentController implements Initializable {
         System.out.println("OFF> "+serial.TX(Commands.ONKYO_OFF));
         lblPort.setText("OFF");
     }
+
     @FXML
-    private void push() {
+    private void setParams() {
+        log.l("setParams()");
+        selectedPort = null;
+        Delay delay = new Delay();
+        synchronized(serial){
+            serial = new Serial();
+            if (cboComs.getSelectionModel().getSelectedIndex() != -1) {
+                selectedPort = cboComs.getSelectionModel().getSelectedItem();
+                serial.setComPort(selectedPort);
+            }
+            if (!txtBaud.getText().isEmpty()) {
+                try {
+                    serial.setBaudRate(Integer.parseInt(txtBaud.getText()));
+                    popup.infoAlert("Info!", "Success");
+                    delay.by(1000, () -> {
+                        Platform.runLater( () -> {
+                            popup.close();
+                        });
+                    });
+                } catch (NumberFormatException nfe) {
+                    popup.infoAlert("Baudrate error!", "Integer expected!");
+                } catch (Exception e) {
+                    popup.infoAlert("Error!", e.getStackTrace().toString());
+                }
+                finally {
+                    if (serial.getPort() != null) {
+                        log.l("opening port");
+                        serial.getPort().openPort();
+        //                serial.getPort().setComPortTimeouts(
+        //                        SerialPort.TIMEOUT_NONBLOCKING,
+        //                        20000, 20000);
+                    }
+                }
+                }
+                
+            }
+            
+
+//        }
+    }
+    
+    @FXML
+    private void push() throws InterruptedException {
         log.l("PUSH");
-        String selectedPort = cboComs.getSelectionModel().getSelectedItem();
+        selectedPort = cboComs.getSelectionModel().getSelectedItem();
         try {
             log.l("COM: "+selectedPort);
             log.l("BAUD: "+txtBaud.getText());
             if (selectedPort == null || selectedPort.isEmpty() || selectedPort.equals("choose..")) {
-                log.l("NO PORT SELECTED");
                 popup.infoAlert("Port error!", "Select a port");
+             
                 return;
             }
             if (txtBaud.getText().isEmpty()) {
-                log.l("NO BAUD SET");
                 popup.infoAlert("Baudrate error!", "Set baudrate");
                 return;
             }
-            serial = new Serial(selectedPort,
-                    Integer.parseInt(txtBaud.getText()));
-            serial.pushCommand(txtCommand.getText());
+            synchronized(serialLock) {
+                portBeingUsed = true;
+                serial = new Serial(selectedPort,
+                        Integer.parseInt(txtBaud.getText()));
+
+                serial.pushCommand(txtCommand.getText());
+            }
         } 
         catch (NumberFormatException nfe) {
             log.l("push error nfe: "+nfe.getStackTrace());
-            popup.infoAlert("Baudrate error!", "integer expected");
+            popup.infoAlert("Baudrate error!", "Integer expected");
         }
         catch(Exception e) {
             log.l("push error: "+e.getStackTrace()+e.getCause());
             popup.infoAlert("Error!", e.getStackTrace().toString());
-        }
-        finally {
-            serial.closePort(3);
-            log.l("finally reached");
-            log.l(serial.TX(txtCommand.getText()).toString());
             
         }
-    }
-    public void populatePorts() {
-        for (SerialPort port : serial.getAvailabePorts()) {
-            availablePorts.add(port.getSystemPortName());
+        finally {
+            synchronized(serialLock) {
+                log.l("push() notifyingAll");
+                portBeingUsed = false;
+                serialLock.notifyAll();
+            }
         }
-        Collections.reverse(availablePorts);
+    }
+    private void refreshPorts() {
+        clearPorts();
+        for (SerialPort port : SerialPort.getCommPorts()) {
+          Platform.runLater(() -> {
+              availablePorts.add(port.getSystemPortName());
+          });
+            Serial.availablePorts = SerialPort.getCommPorts();
+        }
+        Platform.runLater(() -> {
+            Collections.reverse(availablePorts); 
+        });
         cboComs.setItems(availablePorts);
     }
-    public void clearPorts() {
+    private void clearPorts() {
         Platform.runLater(() -> {
             availablePorts.clear();
         });
+    }
         
-    }
-    void refreshPorts() {
-//        log.l("refreshPorts()");
-        Refresh refresh = new Refresh();
-        Delay delay = new Delay();
-        delay.by(1000, () -> {
-            refresh.start();
-        });
-//        refresh.start();
-        if (refresh.getNewPorts() != null) {
-            if (cboComs.getItems().size() != refresh.getNewPorts().length) {
-                Platform.runLater(() -> {
-                    log.l(refresh.getNewPorts()[0].getPortDescription());
-                    clearPorts();
-                    for (SerialPort port : refresh.getNewPorts()) {
-                        availablePorts.add(port.getSystemPortName());
-                    }
-                });
-            }
-            cboComs.setItems(availablePorts);
-            
-        }
-    }
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-//        serial = new Serial();
-//        popup = new Popup();
-        serial = null;
-        class Manage {
-            private Serial serial;
-            Manage(Serial serial) {
-                this.serial = serial;
-            }
-            public boolean isInit() {
-                log.l(this.serial != null);
-                log.l(this.serial.getPort() != null);
-                return this.serial != null && this.serial.getPort() != null 
-                        ?true :false; 
-            }
-        }
-       
-        
-        new Thread(() -> {
-            while (!Comms.MainWindowClosed) {
-                refreshPorts();
-            }     
-        }).start();
+        executor = Executors.newFixedThreadPool(5);
 
+        // Runnable, return void, nothing, submit and run the task async
+        executor.submit(() -> {
+            log.l("first task (Runnable)");
+//            serial = new Serial();
+            while (!Comms.MainWindowClosed) {
+                if (availablePorts.size() <= 0) {
+                    refreshPorts();
+                }
+                else if (Serial.availablePorts.length != 
+                        SerialPort.getCommPorts().length) {
+                    log.l("refreshing ports");
+                    refreshPorts();
+                }
+            }     
+        });
+
+        
+        Future<Void> futureTask1 = executor.submit(() -> {
+            System.out.println("Callable READ:");
+            Read read;
+            while (!Comms.MainWindowClosed) {
+                synchronized(serialLock) {
+                    if (portBeingUsed) wait();
+//                log.l("serialLock ");
+                    synchronized(serial) {
+                        if (serial != null) {
+    //                        log.l("serial INIT");
+    //                        log.l("selPort: "+selectedPort);
+                            if (serial.getPort() != null) {
+                                read = new Read(serial.getPort());
+                                log.l(read.output());
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        });
+        
+        Future<Void> atClose = executor.submit(() -> {
+            log.l("atClose()");
+            while (!Comms.MainWindowClosed) {
+                
+                synchronized(closingLock) {
+                    log.l("wait()");
+                    closingLock.wait();
+                }
+                
+            }
+            log.l("shuting all threads down");
+            synchronized(serial) {
+                if (serial != null) {
+                    log.l("about to close serial");
+                    if (serial.getPort() != null && serial.getPort().isOpen()) {
+                        log.l("closing com port in atClose()");
+                        serial.getPort().closePort();
+                    }
+                }
+            }
+            futureTask1.cancel(true);
+            executor.shutdown();
+            Platform.exit();
+            return null;
+        });
+        log.l("Before Future Result");
+        log.l("After Future Result");
         System.out.println("FXMLDocumentController initialize");
-        serial = null;
+//        serial = null;
     }    
     
 }

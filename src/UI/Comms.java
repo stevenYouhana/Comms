@@ -22,8 +22,13 @@ public class Comms extends Application {
         stage.setTitle("For Serial");
         stage.show();
         stage.setOnCloseRequest((WindowEvent event) -> {
+            
             log.l("main terminated");            
             MainWindowClosed = true;
+            synchronized(UI.FXMLDocumentController.closingLock) {
+                  UI.FXMLDocumentController.closingLock.notifyAll();
+            } 
+          
             Platform.exit();
         });
     }

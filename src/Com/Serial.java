@@ -13,18 +13,28 @@ import java.util.logging.Logger;
 
 public class Serial {
     Log log = new Log();
-    SerialPort[] comPorts;
+    public static SerialPort[] availablePorts;
     SerialPort comPort;
-    int baudRate;
+    int baudRate = 0;
+    public final int DEFAULT_BAUD = 9600;
     byte[] command;
-    public static int numberOfPorts = 0;
     Popup popup;
     Delay delay;
+    
+    static {
+        availablePorts = SerialPort.getCommPorts();
+    }
     
     public Serial(String port, int baudRate) {
         this.comPort = selectedCom(port);
         this.baudRate = baudRate;
         popup = new Popup();
+    }
+    public Serial(String port) {
+        this(port, 9600);
+    }
+    public Serial(Runnable task) {
+        task.run();
     }
     public Serial() {}
     
@@ -33,13 +43,10 @@ public class Serial {
         log.l("port set to "+port);
         log.l("SET PORT TO: "+comPort.getSystemPortName());
     }
-    public SerialPort[] getAvailabePorts() {
-        this.comPorts = SerialPort.getCommPorts();
-        numberOfPorts = comPorts.length;
-        return comPorts;
-    }
+    
     public void setBaudRate(int baudRate) {
         this.baudRate = baudRate;
+        if (this.comPort != null) comPort.setBaudRate(baudRate);
     }
     public void setCommand(String command) {
         this.command = command.getBytes();
@@ -55,7 +62,7 @@ public class Serial {
             delay = new Delay();
             delay.by(sec, () -> {
                 comPort.closePort();
-                log.l("port closed");
+                log.l("closePort(int sec)");
             });
     
     }
@@ -70,9 +77,9 @@ public class Serial {
             log.l("pushCommand() ERR e: "+e.getCause());
             popup.infoAlert("Serial error!", "check if you have selected a valid COM port");
         }
-        finally {
-            if (comPort != null && comPort.isOpen()) closePort(5);
-        }
+//        finally {
+//            if (comPort != null && comPort.isOpen()) closePort(5000);
+//        }
     }
 
     

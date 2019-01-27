@@ -9,22 +9,27 @@ public class Read {
     Log log = new Log();
     public Read(SerialPort port) {
         this.port = port;
+//        log.l("Read(port){} "+port.getSystemPortName());
     }
     
     public String output() {
-        log.l("output()");
+//        log.l("output()");
         string = "";
-        InputStream in = port.getInputStream();
-        try {
-            for (int j = 0; j < 1000; ++j) {
-                if (in != null && in.available() > 0) {
-                    string += (char)in.read();
-                    in.close();
+        synchronized(UI.FXMLDocumentController.serial) {
+            if (!port.isOpen()) port.openPort();
+            InputStream in = port.getInputStream();
+            try {
+//                log.l("output() "+port.getSystemPortName());
+                for (int j = 0; j < 1000; ++j) {
+                    if (in != null && in.available() > 0) {
+                        string += (char)in.read();
+                        in.close();
+                    }
                 }
+
+            } catch (Exception e) {
+                e.printStackTrace(); 
             }
-            
-        } catch (Exception e) {
-            e.printStackTrace(); 
         }
         return string;
     }
