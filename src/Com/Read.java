@@ -15,7 +15,7 @@ public class Read {
     public String output() {
 //        log.l("output()");
         string = "";
-        synchronized(UI.FXMLDocumentController.serial) {
+//        synchronized(UI.FXMLDocumentController.serialLock) {
             if (!port.isOpen()) port.openPort();
             InputStream in = port.getInputStream();
             try {
@@ -30,7 +30,7 @@ public class Read {
             } catch (Exception e) {
                 e.printStackTrace(); 
             }
-        }
+//        }
         return string;
     }
 }

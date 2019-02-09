@@ -4,12 +4,6 @@ import Handler.Delay;
 import Handler.IDelay;
 import Handler.Popup;
 import com.fazecast.jSerialComm.*;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Timer;
-import java.util.concurrent.Callable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Serial {
     Log log = new Log();
@@ -20,6 +14,7 @@ public class Serial {
     byte[] command;
     Popup popup;
     Delay delay;
+    public volatile static String output = "";
     
     static {
         availablePorts = SerialPort.getCommPorts();
@@ -58,13 +53,14 @@ public class Serial {
         return comPort;
     }
     public void closePort(int sec) {
-        log.l("closePort(int sec)");
-            delay = new Delay();
-            delay.by(sec, () -> {
-                comPort.closePort();
-                log.l("closePort(int sec)");
-            });
+        delay = new Delay();
+        delay.by(sec, () -> {
+            comPort.closePort();
+        });
+    }
     
+    public void open() {
+        comPort.openPort();
     }
     public void pushCommand(String command) {
         try {
@@ -82,7 +78,6 @@ public class Serial {
 //        }
     }
 
-    
     private SerialPort selectedCom(String port) {
         SerialPort[] availablePorts = SerialPort.getCommPorts();
         for (SerialPort p : availablePorts) {
@@ -92,7 +87,7 @@ public class Serial {
     }
     @Override
     public String toString() {
-        return comPort.getPortDescription();
+        return comPort.getSystemPortName();
     }
     
 }

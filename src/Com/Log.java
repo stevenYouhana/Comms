@@ -8,4 +8,8 @@ public class Log {
     public void l(boolean bool) {
         System.out.println(bool);
     }
+
+    public void l(Serial serial) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 }
