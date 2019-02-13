@@ -12,6 +12,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import Com.Serial;
 import Handler.Delay;
+import Handler.MultiThread.TaskManager;
 import Handler.MultiThread.TxRx;
 import Handler.Popup;
 import com.fazecast.jSerialComm.SerialPort;
@@ -20,6 +21,7 @@ import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -57,17 +59,6 @@ public class FXMLDocumentController implements Initializable {
     private TextField txtCommand;
     @FXML
     private TextArea txtOutput;
-    
-    @FXML
-    private void onAction() {
-        System.out.println("ON> "+serial.TX(Commands.ONKYO_ON));
-        lblPort.setText("ON");
-    }
-    @FXML
-    private void offAction() {
-        System.out.println("OFF> "+serial.TX(Commands.ONKYO_OFF));
-        lblPort.setText("OFF");
-    }
 
     @FXML
     private void push() throws InterruptedException {
@@ -95,16 +86,12 @@ public class FXMLDocumentController implements Initializable {
         catch(Exception e) {
             log.l("push error: "+e.getStackTrace()+e.getCause());
             popup.infoAlert("Error!", e.getStackTrace().toString());
-            
         }
         finally {
-//            log.l("set output to "+txrx.output());
             delay = new Delay();
             delay.by(2000, () -> {
-                synchronized(TxRx.outputLock) {
-                    log.l("set output to "+txrx.output());
-                    txtOutput.setText(txrx.output());
-                }
+                log.l("set output to "+txrx.output());
+                    txtOutput.setText(txrx.output().toString());
             });
         }
     }
@@ -126,54 +113,33 @@ public class FXMLDocumentController implements Initializable {
             availablePorts.clear();
         });
     }
-        
+    public ExecutorService getExecutor() {
+        return executor;
+    }
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        executor = Executors.newFixedThreadPool(9);
-
-        // Runnable, return void, nothing, submit and run the task async
-        executor.submit(() -> {
-            log.l("first task (Runnable)");
-            while (!Comms.MainWindowClosed) {
-                if (availablePorts.size() <= 0) {
-                    refreshPorts();
-                }
-                else if (Serial.availablePorts.length != 
-                        SerialPort.getCommPorts().length) {
-                    log.l("refreshing ports");
-                    refreshPorts();
-                }
-            }     
-        });
-        
-        Future<Void> atClose = executor.submit(() -> {
-            log.l("atClose()");
-            while (!Comms.MainWindowClosed) {
-                
-                synchronized(closingLock) {
-                    log.l("wait()");
-                    closingLock.wait();
-                }
-                
+            ExecutorService executor = Executors.newSingleThreadExecutor(
+    new ThreadFactory() {
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = Executors.defaultThreadFactory().newThread(r);
+            return t;
+        }
+    });
+    executor.submit(() -> {
+        while (!Comms.MainWindowClosed) {
+            if (availablePorts.size() <= 0) {
+                refreshPorts();
             }
-            log.l("shuting all threads down");
-            synchronized(closingLock) {
-                if (serial != null) {
-                    log.l("about to close serial");
-                    if (serial.getPort() != null && serial.getPort().isOpen()) {
-                        log.l("closing com port in atClose()");
-                        serial.getPort().closePort();
-                    }
-                }
+            else if (Serial.availablePorts.length != 
+                    SerialPort.getCommPorts().length) {
+                log.l("refreshing ports");
+                refreshPorts();
             }
-            executor.shutdown();
-            Platform.exit();
-            return null;
-        });
-        
-        log.l("Before Future Result");
-        log.l("After Future Result");
-        System.out.println("FXMLDocumentController initialize");
+        }
+        TaskManager.stop(executor);
+    });
+    System.out.println("FXMLDocumentController initialize");
     }    
     
 }

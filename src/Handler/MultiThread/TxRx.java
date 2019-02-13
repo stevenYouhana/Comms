@@ -14,6 +14,7 @@ public class TxRx extends TaskManager {
     Serial serial;
     String command = "";
     String output = "";
+    StringBuffer buffer = new StringBuffer();
     Read reader;
     public static final Object outputLock = new Object();
 
@@ -26,7 +27,7 @@ public class TxRx extends TaskManager {
         log.l("pushAndRead()");
         executor.submit(push());
         executor.submit(read());
-        stop(executor);
+        TaskManager.stop(executor);
     }
 
     Runnable read() {
@@ -35,11 +36,7 @@ public class TxRx extends TaskManager {
             lock.lock();
             try {
                 sleep(1);
-                log.l("reading");
-                log.l(reader.output());
-                synchronized (outputLock) {
-                    output = reader.output();
-                }
+                buffer.append(reader.output());
             } finally {
                 serial.getPort().closePort();
             }
@@ -53,8 +50,8 @@ public class TxRx extends TaskManager {
             lock.unlock();
         };
     }
-    public String output() {
-        return output;
+    public StringBuffer output() {
+        return buffer;
     }
     
 }

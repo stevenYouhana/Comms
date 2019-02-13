@@ -2,19 +2,10 @@
 package Handler.MultiThread;
 
 import Com.Log;
-import Com.Read;
-import Com.Serial;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.StampedLock;
-import java.util.function.Function;
 import javafx.concurrent.Task;
 
 
@@ -37,7 +28,7 @@ public class TaskManager {
         }
     }
     
-    public void stop(ExecutorService executor) {
+    public static void stop(ExecutorService executor) {
         try {
             executor.shutdown();
 //            log.l("ex shutdown()");
@@ -51,7 +42,7 @@ public class TaskManager {
                 System.err.println("killing non-finished tasks");
             }
             executor.shutdownNow();
-//            log.l("ex shutdownNow()");
+            log.l("ex shutdownNow()");
         }
     }
     
