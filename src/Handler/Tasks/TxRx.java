@@ -1,9 +1,9 @@
 
-package Handler.MultiThread;
+package Handler.Tasks;
 
 import Com.Read;
 import Com.Serial;
-import static Handler.MultiThread.TaskManager.log;
+import static Handler.Tasks.TaskManager.log;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
@@ -13,7 +13,7 @@ public class TxRx extends TaskManager {
     ReentrantLock lock = new ReentrantLock();
     Serial serial;
     String command = "";
-    String output = "";
+    private String output = "";
     StringBuffer buffer = new StringBuffer();
     Read reader;
     public static final Object outputLock = new Object();
@@ -35,7 +35,7 @@ public class TxRx extends TaskManager {
         return () -> {
             lock.lock();
             try {
-                sleep(1);
+                sleep(500);
                 buffer.append(reader.output());
             } finally {
                 serial.getPort().closePort();

@@ -4,6 +4,7 @@ package Handler;
 import Com.Log;
 import java.util.Timer;
 import java.util.concurrent.Callable;
+import javafx.application.Platform;
 
 public class Delay {
     Timer timer = new Timer();
@@ -29,12 +30,14 @@ public class Delay {
             @Override
             public void run() {
                 log.l("delaying by "+ms);
-                try {
+//                try {
                     func.run();
-                } catch (Exception ex) {
-                    popup.infoAlert("Error!", "delay by(): "+ex.getMessage());
-                    log.l("Err delay run");
-                }
+//                } catch (Exception ex) {
+////                    System.out.println("delay by"+ex.getStackTrace());
+//                    Platform.runLater(() -> popup.infoAlert("Error!", "delay by(): "));
+//                    log.l("Err delay run");
+//                    ex.getStackTrace();
+//                }
             }
         }, ms);
     }

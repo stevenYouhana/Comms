@@ -1,5 +1,5 @@
 
-package Handler.MultiThread;
+package Handler.Tasks;
 
 import Com.Log;
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ public class TaskManager {
     }
         public void sleep(int seconds) {
         try {
-            TimeUnit.SECONDS.sleep(seconds);
+            TimeUnit.MILLISECONDS.sleep(seconds);
         } catch (InterruptedException e) {
             throw new IllegalStateException(e);
         }
@@ -31,7 +31,6 @@ public class TaskManager {
     public static void stop(ExecutorService executor) {
         try {
             executor.shutdown();
-//            log.l("ex shutdown()");
             executor.awaitTermination(60, TimeUnit.SECONDS);
         }
         catch (InterruptedException e) {
@@ -42,7 +41,6 @@ public class TaskManager {
                 System.err.println("killing non-finished tasks");
             }
             executor.shutdownNow();
-            log.l("ex shutdownNow()");
         }
     }
     

@@ -2,8 +2,8 @@
 package Test;
 
 import Com.Serial;
-import Handler.MultiThread.TaskManager;
-import Handler.MultiThread.TxRx;
+import Handler.Tasks.TaskManager;
+import Handler.Tasks.TxRx;
 
 public class Playground {
     

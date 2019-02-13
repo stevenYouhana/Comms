@@ -12,8 +12,8 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import Com.Serial;
 import Handler.Delay;
-import Handler.MultiThread.TaskManager;
-import Handler.MultiThread.TxRx;
+import Handler.Tasks.TaskManager;
+import Handler.Tasks.TxRx;
 import Handler.Popup;
 import com.fazecast.jSerialComm.SerialPort;
 import java.util.Collections;
@@ -89,9 +89,13 @@ public class FXMLDocumentController implements Initializable {
         }
         finally {
             delay = new Delay();
-            delay.by(2000, () -> {
+            delay.by(1000, () -> {
+                try {
                 log.l("set output to "+txrx.output());
                     txtOutput.setText(txrx.output().toString());
+                } finally {
+                    return null;
+                }
             });
         }
     }

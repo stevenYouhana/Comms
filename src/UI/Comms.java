@@ -1,7 +1,8 @@
 package UI;
 
 import Com.Log;
-import Handler.MultiThread.TaskManager;
+import Handler.Delay;
+import Handler.Tasks.TaskManager;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -18,16 +19,18 @@ public class Comms extends Application {
     public void start(Stage stage) throws Exception {
         Parent root = FXMLLoader.load(getClass().getResource("FXMLDocument.fxml"));
         FXMLDocumentController cntrl = new FXMLDocumentController();
+        
         Scene scene = new Scene(root);
         stage.setScene(scene);
         stage.setTitle("For Serial");
         stage.show();
         stage.setOnCloseRequest((WindowEvent event) -> {
+            Delay delay = new Delay();
             log.l("main terminated");            
             MainWindowClosed = true;
             stage.close();
             Platform.exit();
-            System.exit(0);
+            delay.by(1000, () -> System.exit(0));
         });
     }
 
