@@ -4,12 +4,13 @@ import Handler.Delay;
 import Handler.IDelay;
 import Handler.Popup;
 import com.fazecast.jSerialComm.*;
+import java.io.IOException;
 
 public class Serial {
     Log log = new Log();
     public static SerialPort[] availablePorts;
-    SerialPort comPort;
-    int baudRate = 0;
+    public static SerialPort comPort;
+    int baudRate;
     public final int DEFAULT_BAUD = 9600;
     byte[] command;
     Popup popup;
@@ -23,6 +24,14 @@ public class Serial {
     public Serial(String port, int baudRate) {
         this.comPort = selectedCom(port);
         this.baudRate = baudRate;
+        comPort.setNumDataBits(8);
+        comPort.setNumStopBits(1);
+        comPort.setParity(0);
+        comPort.setFlowControl(0);
+        
+        comPort.setComPortTimeouts(SerialPort.TIMEOUT_SCANNER, 0, 0);
+        comPort.openPort();
+        log.l("Serial main constructor set");
         popup = new Popup();
     }
     public Serial(String port) {
@@ -63,9 +72,15 @@ public class Serial {
         comPort.openPort();
     }
     public void pushCommand(String command) {
+        log.l("pushCommand(String command)"+" open: "+comPort.isOpen());
         try {
+        if (!comPort.openPort()) return;
         comPort.openPort();
-        comPort.writeBytes(command.getBytes(), command.length());
+        log.l("port opened and pushing from pushCommand(String command)");
+        
+        comPort.getOutputStream().write(command.getBytes());
+//            comPort.getOutputStream().write(Integer.parseInt(command));
+//        comPort.writeBytes(command.getBytes(), command.length());
         } catch (NullPointerException npe) {
             log.l("pushCommand ERR npe: " + npe.getCause());
         }
