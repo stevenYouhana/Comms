@@ -9,14 +9,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class TxRx extends TaskManager {
+public class SerialSession extends TaskManager {
     ReentrantLock lock = new ReentrantLock();
     Serial serial;
     String command = "";
     static StringBuffer buffer = new StringBuffer();
     Read reader;
 
-    public TxRx(Serial serial, String command) {
+    public SerialSession(Serial serial, String command) {
         this.serial = serial;
         this.command = command;
     }
@@ -45,9 +45,6 @@ public class TxRx extends TaskManager {
                 lock.unlock();
             }
         };
-    }
-    public SerialPort getThePort() {
-            return serial.getPort();
     }
     public StringBuffer output() {
         return buffer;

@@ -1,10 +1,9 @@
 package Com;
 
 import Handler.Delay;
-import Handler.IDelay;
 import Handler.Popup;
 import com.fazecast.jSerialComm.*;
-import java.io.IOException;
+import javafx.application.Platform;
 
 public class Serial {
     Log log = new Log();
@@ -61,12 +60,6 @@ public class Serial {
     public SerialPort getPort() {
         return comPort;
     }
-    public void closePort(int sec) {
-        delay = new Delay();
-        delay.by(sec, () -> {
-            comPort.closePort();
-        });
-    }
     
     public void open() {
         comPort.openPort();
@@ -77,20 +70,19 @@ public class Serial {
         if (!comPort.openPort()) return;
         comPort.openPort();
         log.l("port opened and pushing from pushCommand(String command)");
-        
         comPort.getOutputStream().write(command.getBytes());
-//            comPort.getOutputStream().write(Integer.parseInt(command));
-//        comPort.writeBytes(command.getBytes(), command.length());
-        } catch (NullPointerException npe) {
-            log.l("pushCommand ERR npe: " + npe.getCause());
+//        } catch (NullPointerException npe) {
+//            log.l("pushCommand ERR npe: " + npe.getCause());
         }
         catch (Exception e) {
+            Platform.runLater(
+                    () -> popup.infoAlert("Serial error!", "Access to "
+                            +comPort.getSystemPortName()+" is denied")
+            );
+            log.l("comport: "+comPort.isOpen() + comPort.getSystemPortName());
+            log.l("comport OPS: "+comPort.getOutputStream());
             log.l("pushCommand() ERR e: "+e.getCause());
-            popup.infoAlert("Serial error!", "check if you have selected a valid COM port");
         }
-//        finally {
-//            if (comPort != null && comPort.isOpen()) closePort(5000);
-//        }
     }
 
     private SerialPort selectedCom(String port) {

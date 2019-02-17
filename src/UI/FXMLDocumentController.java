@@ -13,9 +13,10 @@ import javafx.scene.control.Label;
 import Com.Serial;
 import Handler.Delay;
 import Handler.Tasks.TaskManager;
-import Handler.Tasks.TxRx;
+import Handler.Tasks.SerialSession;
 import Handler.Popup;
 import com.fazecast.jSerialComm.SerialPort;
+import java.awt.event.MouseEvent;
 import java.util.Collections;
 
 import java.util.concurrent.ExecutorService;
@@ -25,12 +26,14 @@ import java.util.concurrent.ThreadFactory;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.scene.DepthTest;
 import javafx.scene.control.Button;
 
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.stage.Stage;
 /**
  *
  * @author steven.youhana
@@ -43,7 +46,7 @@ public class FXMLDocumentController implements Initializable {
     Popup popup = new Popup();
     ExecutorService executor;
     Delay delay;
-    TxRx txrx;
+    SerialSession serialSession;
     private final String BTN_CONNECT = "Connect";
     private final String BTN_DISCONNECT = "Disconnet";
     volatile String selectedPort = null;
@@ -63,7 +66,6 @@ public class FXMLDocumentController implements Initializable {
     @FXML
     private Button btnPush;
     @FXML
-    
     public void connect() {
         if (btnConnect.getText().equals(BTN_CONNECT)) {
             log.l("connect");
@@ -91,6 +93,10 @@ public class FXMLDocumentController implements Initializable {
                 popup.infoAlert("Error!", e.getStackTrace().toString());
             }
             serial = new Serial(selectedPort, Integer.parseInt(txtBaud.getText()));
+            if (!Serial.comPort.isOpen()) {
+                popup.errorMessage("Error", Serial.comPort.getSystemPortName()+ " is busy");
+                return;
+            }
             btnConnect.setText(BTN_DISCONNECT);
             txtBaud.setDisable(true);
             cboComs.setDisable(true);
@@ -111,8 +117,8 @@ public class FXMLDocumentController implements Initializable {
     private void push() throws InterruptedException {
         log.l("PUSH");
         try {
-            txrx = new TxRx(serial, txtCommand.getText());
-            txrx.pushAndRead();
+            serialSession = new SerialSession(serial, txtCommand.getText());
+            serialSession.pushAndRead();
         }
         catch (NumberFormatException nfe) {
             log.l("push error nfe: "+nfe.getStackTrace());
@@ -126,8 +132,8 @@ public class FXMLDocumentController implements Initializable {
             delay = new Delay();
             delay.by(1000, () -> {
                 try {
-                log.l("set output to "+txrx.output());
-                    txtOutput.setText(txrx.output().toString());
+                log.l("set output to "+serialSession.output());
+                    txtOutput.setText(serialSession.output().toString());
                 } finally {
                     return null;
                 }
@@ -152,11 +158,16 @@ public class FXMLDocumentController implements Initializable {
             availablePorts.clear();
         });
     }
-    public TxRx getTxRx() {
-        return txrx;
+    public SerialSession getTxRx() {
+        return serialSession;
     }
     public ExecutorService getExecutor() {
         return executor;
+    }
+    public void goToAdvSettings() throws Exception {
+        Stage stage = new Stage();
+        SerialSettings setting = new SerialSettings();
+        setting.start(stage);
     }
     @Override
     public void initialize(URL url, ResourceBundle rb) {

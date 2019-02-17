@@ -34,7 +34,6 @@ public class Comms extends Application {
             try {
                 if (Serial.comPort.isOpen()) Serial.comPort.closePort();
             } catch (NullPointerException npe) {
-                log.l("closing NULL port");
                 delay.by(1000, () -> System.exit(0));
             }
             delay.by(1000, () -> System.exit(0));
