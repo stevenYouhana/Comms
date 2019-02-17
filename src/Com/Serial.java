@@ -65,6 +65,7 @@ public class Serial {
     public void pushCommand(String command) {
         try {
         comPort.openPort();
+        
         comPort.writeBytes(command.getBytes(), command.length());
         } catch (NullPointerException npe) {
             log.l("pushCommand ERR npe: " + npe.getCause());
