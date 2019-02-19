@@ -7,15 +7,18 @@ void writer() {
   Serial.write("Hello, Java");
 }
 void loop() {
+  Serial.write("hi java");
+  delay(1000);
  if (Serial.available() > 0) {
-  char inByte = Serial.read();
+//  char inByte = Serial.read();
+  int inByte = Serial.read();
   Serial.println(inByte);
   switch (inByte) {
-    case 'a':
+    case '1':
         Serial.write("turning ON"); 
         digitalWrite(13, HIGH);
       break;
-    case 'b': 
+    case '2': 
         Serial.write("turning OFF"); 
         digitalWrite(13, LOW);
       break;
@@ -23,9 +26,9 @@ void loop() {
     default: Serial.write("TX");
       break;
   }
-  delay(10);
+//  delay(10);
 //  writer();
  }
  delay(10);  
- Serial.flush();
+// Serial.flush();
 }

@@ -1,6 +1,7 @@
 package UI;
 
 import Com.Log;
+import Com.Serial;
 import Handler.Delay;
 import Handler.Tasks.TaskManager;
 import javafx.application.Application;
@@ -30,6 +31,11 @@ public class Comms extends Application {
             MainWindowClosed = true;
             stage.close();
             Platform.exit();
+            try {
+                if (Serial.comPort.isOpen()) Serial.comPort.closePort();
+            } catch (NullPointerException npe) {
+                delay.by(1000, () -> System.exit(0));
+            }
             delay.by(1000, () -> System.exit(0));
         });
     }

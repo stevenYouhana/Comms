@@ -4,21 +4,19 @@ package Handler.Tasks;
 import Com.Read;
 import Com.Serial;
 import static Handler.Tasks.TaskManager.log;
+import com.fazecast.jSerialComm.SerialPort;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class TxRx extends TaskManager {
-    final ExecutorService executor = Executors.newFixedThreadPool(2);
+public class SerialSession extends TaskManager {
     ReentrantLock lock = new ReentrantLock();
     Serial serial;
     String command = "";
-    private String output = "";
-    StringBuffer buffer = new StringBuffer();
+    static StringBuffer buffer = new StringBuffer();
     Read reader;
-    public static final Object outputLock = new Object();
 
-    public TxRx(Serial serial, String command) {
+    public SerialSession(Serial serial, String command) {
         this.serial = serial;
         this.command = command;
     }
@@ -34,20 +32,18 @@ public class TxRx extends TaskManager {
         reader = new Read(serial.getPort());
         return () -> {
             lock.lock();
-            try {
                 sleep(500);
-                buffer.append(reader.output());
-            } finally {
-                serial.getPort().closePort();
-            }
+                buffer.append(reader.output()).append("\n");
         };
     }
 
     Runnable push() {
-        serial.open();
         return () -> {
+            try {
             serial.pushCommand(command);
-            lock.unlock();
+            } finally {
+                lock.unlock();
+            }
         };
     }
     public StringBuffer output() {

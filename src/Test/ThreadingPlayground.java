@@ -56,7 +56,7 @@ class Operation {
         
         log.l("push future is done? "+future.isDone());
 //        shutdown(ex);
-        serial.closePort(1);
+//        serial.closePort(1);
     }
     public void read() throws InterruptedException, ExecutionException, TimeoutException {
         Reader reader = new Reader();

@@ -24,7 +24,6 @@ public class Playground2 {
             long stamp = lock.tryOptimisticRead();
 
             try {
-                log.l(reader.output());
             System.out.println("Optimistic Lock Valid: " + lock.validate(stamp));
             sleep(1);
             System.out.println("Optimistic Lock Valid: " + lock.validate(stamp));
@@ -35,7 +34,7 @@ public class Playground2 {
 //
 //            }
             finally {
-                serial.closePort(0);
+//                serial.closePort(0);
                 lock.unlock(stamp);
             }
         });

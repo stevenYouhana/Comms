@@ -9,17 +9,16 @@
 <GridPane fx:controller="UI.FXMLDocumentController"  
     xmlns:fx="http://javafx.com/fxml" alignment="center" hgap="20" vgap="20"
     styleClass="UI.Style.css" >
-    
-        <Label id="lblPort" fx:id="lblPort" text="Com port:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-        <ComboBox fx:id="cboComs" promptText="choose.." GridPane.rowIndex="0" />
+        
+        <Label id="lblPort" fx:id="lblPort" text="Com port:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+        <ComboBox fx:id="cboComs" promptText="select.." GridPane.columnIndex="1" GridPane.rowIndex="0" />
         <Label fx:id="lblBaud" text="baud rate:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
         <TextField fx:id="txtBaud" promptText="9600"  GridPane.columnIndex="1" GridPane.rowIndex="2" /> 
-        <Label fx:id="lblCommand" text="commmand:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-        <TextField fx:id="txtCommand" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-        <Button fx:id="btnPush" text="Push" onAction="#push" GridPane.columnIndex="1" GridPane.rowIndex="4" prefWidth="150"  />
-        <TextArea fx:id="txtOutput" GridPane.columnIndex="1" GridPane.rowIndex="5"  
-                  wrapText="true" editable="false" promptText="output..."/>
-
-
-        
+        <Button fx:id="btnConnect" text="Connect" onAction="#connect" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+        <Label fx:id="lblCommand" text="commmand:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+        <TextField fx:id="txtCommand" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+        <Button fx:id="btnPush" text="Push" onAction="#push" GridPane.columnIndex="1" GridPane.rowIndex="5" prefWidth="150"  />
+        <TextArea fx:id="txtOutput" GridPane.columnIndex="1" GridPane.rowIndex="6"  
+                  wrapText="true" editable="false" promptText="output..." />
+        <Hyperlink  fx:id="advSettings" text="Advanced setting" onAction="#goToAdvSettings" GridPane.columnIndex="1" GridPane.rowIndex="7"/> 
 </GridPane>
