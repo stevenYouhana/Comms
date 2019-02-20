@@ -24,6 +24,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
@@ -52,7 +54,7 @@ public class FXMLDocumentController implements Initializable {
     private final String BTN_DISCONNECT = "Disconnet";
     volatile String selectedPort = null;
     Stage stage;
-    
+    SerialSettings setting;
     @FXML
     private ComboBox<String> cboComs;
     @FXML
@@ -121,7 +123,7 @@ public class FXMLDocumentController implements Initializable {
     private void push() throws InterruptedException {
         log.l("PUSH");
         try {
-            serialSession = new SerialSession(serial, txtCommand.getText());
+            serialSession = new SerialSession(serial, txtCommand.getText()+'\n');
             serialSession.pushAndRead();
         }
         catch (NumberFormatException nfe) {
@@ -137,7 +139,8 @@ public class FXMLDocumentController implements Initializable {
             delay.by(1000, () -> {
                 try {
                 log.l("set output to "+serialSession.output());
-                    txtOutput.setText(serialSession.output().toString());
+                    txtOutput.appendText(serialSession.output().toString());
+                    txtOutput.setScrollTop(Double.MIN_VALUE);
                 } finally {
                     return null;
                 }
@@ -170,13 +173,18 @@ public class FXMLDocumentController implements Initializable {
     }
     public void goToAdvSettings() throws Exception {
         if (SerialSettings.showing == true) return;
-        stage = new Stage();
         log.l("not showing -- should start");
-        SerialSettings setting = SerialSettings.getInstance();
         setting.start(stage);
+    }
+    public void clearOutput() {
+        log.l("clearing output");
+        txtOutput.clear();
+        serialSession.output().delete(0, serialSession.output().length());
     }
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        stage = new Stage();
+        setting = SerialSettings.getInstance();
         ExecutorService executor = Executors.newSingleThreadExecutor(
             new ThreadFactory() {
                 @Override
@@ -202,6 +210,15 @@ public class FXMLDocumentController implements Initializable {
             }
             TaskManager.stop(executor);
         });
+        txtOutput.textProperty().addListener(new ChangeListener<Object>() {
+            @Override
+            public void changed(ObservableValue<?> observable, Object oldValue,
+                    Object newValue) {
+                log.l("textarea change!");
+                txtOutput.setScrollTop(Double.MIN_VALUE);
+            }
+        });
+        
         System.out.println("FXMLDocumentController initialize");
-    }    
+    }
 }

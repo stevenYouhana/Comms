@@ -20,5 +20,6 @@
         <Button fx:id="btnPush" text="Push" onAction="#push" GridPane.columnIndex="1" GridPane.rowIndex="5" prefWidth="150"  />
         <TextArea fx:id="txtOutput" GridPane.columnIndex="1" GridPane.rowIndex="6"  
                   wrapText="true" editable="false" promptText="output..." prefHeight="300"/>
-        <Hyperlink  fx:id="advSettings" text="Advanced setting" onAction="#goToAdvSettings" GridPane.columnIndex="1" GridPane.rowIndex="7"/> 
+        <Hyperlink fx:id="advSettings" text="Advanced setting" onAction="#goToAdvSettings" GridPane.columnIndex="1" GridPane.rowIndex="7"/>
+        <Button fx:id="btnClear" text="Clear output" onAction="#clearOutput" GridPane.columnIndex="2" GridPane.rowIndex="7"/> 
 </GridPane>
