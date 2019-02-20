@@ -7,7 +7,8 @@
 <?import javafx.scene.layout.*?>
 
 <GridPane id="AnchorPane" prefHeight="230.0" prefWidth="250.0" 
-            xmlns:fx="http://javafx.com/fxml/1" alignment="center" hgap="10" vgap="10">
+            xmlns:fx="http://javafx.com/fxml/1" alignment="center" hgap="10" vgap="10"
+fx:controller="UI.FXMLSerialSettingsController">
     <Label text="Baud Rate" GridPane.columnIndex="0" GridPane.rowIndex="0" />
     <Label text="Data bits" GridPane.columnIndex="0" GridPane.rowIndex="1" />
     <Label text="Stop bits" GridPane.columnIndex="0" GridPane.rowIndex="2" />
@@ -18,5 +19,5 @@
     <TextField fx:id="txtSBits" GridPane.columnIndex="1" GridPane.rowIndex="2" />
     <TextField fx:id="txtParity" GridPane.columnIndex="1" GridPane.rowIndex="3" />
     <TextField fx:id="txtFCtrl" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-    <Button fx:id="btnSet" text="Ok" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+    <Button fx:id="btnSet" onAction="#set" text="Ok" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
 </GridPane>

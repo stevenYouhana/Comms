@@ -31,6 +31,7 @@ import javafx.scene.DepthTest;
 import javafx.scene.control.Button;
 
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
@@ -50,11 +51,10 @@ public class FXMLDocumentController implements Initializable {
     private final String BTN_CONNECT = "Connect";
     private final String BTN_DISCONNECT = "Disconnet";
     volatile String selectedPort = null;
+    Stage stage;
     
     @FXML
     private ComboBox<String> cboComs;
-    @FXML
-    private Label lblPort;
     @FXML
     private TextField txtBaud;
     @FXML
@@ -65,6 +65,8 @@ public class FXMLDocumentController implements Initializable {
     private Button btnConnect;
     @FXML
     private Button btnPush;
+    @FXML
+    private Hyperlink advSettings;
     @FXML
     public void connect() {
         if (btnConnect.getText().equals(BTN_CONNECT)) {
@@ -88,7 +90,7 @@ public class FXMLDocumentController implements Initializable {
                 log.l("push error nfe: "+nfe.getStackTrace());
                 popup.infoAlert("Baudrate error!", "Integer expected");
             }
-            catch(Exception e) {
+            catch (Exception e) {
                 log.l("push error: "+e.getStackTrace()+e.getCause());
                 popup.infoAlert("Error!", e.getStackTrace().toString());
             }
@@ -102,6 +104,7 @@ public class FXMLDocumentController implements Initializable {
             cboComs.setDisable(true);
             txtCommand.setDisable(false);
             btnPush.setDisable(false);
+            advSettings.setDisable(true);
         }
         else {
             Serial.comPort.closePort();
@@ -110,6 +113,7 @@ public class FXMLDocumentController implements Initializable {
             cboComs.setDisable(false);
             txtCommand.setDisable(true);
             btnPush.setDisable(true);
+            advSettings.setDisable(false);
         }
     }
     
@@ -165,8 +169,10 @@ public class FXMLDocumentController implements Initializable {
         return executor;
     }
     public void goToAdvSettings() throws Exception {
-        Stage stage = new Stage();
-        SerialSettings setting = new SerialSettings();
+        if (SerialSettings.showing == true) return;
+        stage = new Stage();
+        log.l("not showing -- should start");
+        SerialSettings setting = SerialSettings.getInstance();
         setting.start(stage);
     }
     @Override

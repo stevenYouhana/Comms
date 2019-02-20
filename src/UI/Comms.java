@@ -24,6 +24,7 @@ public class Comms extends Application {
         Scene scene = new Scene(root);
         stage.setScene(scene);
         stage.setTitle("For Serial");
+        stage.setResizable(false);
         stage.show();
         stage.setOnCloseRequest((WindowEvent event) -> {
             Delay delay = new Delay();

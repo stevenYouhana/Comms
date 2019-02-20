@@ -10,12 +10,11 @@ public class Serial {
     public static SerialPort[] availablePorts;
     public static SerialPort comPort;
     int baudRate;
-    public final int DEFAULT_BAUD = 9600;
+    private final int DEFAULT_BAUD = 9600;
     byte[] command;
     Popup popup;
     Delay delay;
     public volatile static String output = "";
-    
     static {
         availablePorts = SerialPort.getCommPorts();
     }
@@ -23,6 +22,7 @@ public class Serial {
     public Serial(String port, int baudRate) {
         this.comPort = selectedCom(port);
         this.baudRate = baudRate;
+        this.comPort.setBaudRate(baudRate);
         comPort.setNumDataBits(8);
         comPort.setNumStopBits(1);
         comPort.setParity(0);
@@ -89,6 +89,7 @@ public class Serial {
             log.l("comport OPS: "+comPort.getOutputStream());
             log.l("pushCommand() ERR e: "+e.getCause());
         }
+        log.l("baud: "+comPort.getBaudRate());
     }
 
     private SerialPort selectedCom(String port) {
