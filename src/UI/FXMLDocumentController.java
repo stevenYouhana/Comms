@@ -17,21 +17,17 @@ import Handler.Tasks.SerialSession;
 import Handler.Popup;
 import com.fazecast.jSerialComm.SerialPort;
 import java.awt.event.MouseEvent;
+import java.util.Arrays;
 import java.util.Collections;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.EventHandler;
-import javafx.scene.DepthTest;
 import javafx.scene.control.Button;
-
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.TextArea;
@@ -52,7 +48,7 @@ public class FXMLDocumentController implements Initializable {
     SerialSession serialSession;
     private final String BTN_CONNECT = "Connect";
     private final String BTN_DISCONNECT = "Disconnet";
-    volatile String selectedPort = null;
+    volatile static String selectedPort = null;
     Stage stage;
     SerialSettings setting;
     @FXML
@@ -73,7 +69,7 @@ public class FXMLDocumentController implements Initializable {
     public void connect() {
         if (btnConnect.getText().equals(BTN_CONNECT)) {
             log.l("connect");
-            selectedPort = cboComs.getSelectionModel().getSelectedItem().toString();
+            selectedPort = cboComs.getSelectionModel().getSelectedItem();
             try {
                 log.l("COM: "+selectedPort);
                 log.l("BAUD: "+txtBaud.getText());
@@ -89,12 +85,12 @@ public class FXMLDocumentController implements Initializable {
                 }
             }
             catch (NumberFormatException nfe) {
-                log.l("push error nfe: "+nfe.getStackTrace());
+                log.l("push error nfe: "+Arrays.toString(nfe.getStackTrace()));
                 popup.infoAlert("Baudrate error!", "Integer expected");
             }
             catch (Exception e) {
-                log.l("push error: "+e.getStackTrace()+e.getCause());
-                popup.infoAlert("Error!", e.getStackTrace().toString());
+                log.l("push error: "+Arrays.toString(e.getStackTrace())+e.getCause());
+                popup.infoAlert("Error!", Arrays.toString(e.getStackTrace()));
             }
             serial = new Serial(selectedPort, Integer.parseInt(txtBaud.getText()));
             if (!Serial.comPort.isOpen()) {
@@ -127,12 +123,12 @@ public class FXMLDocumentController implements Initializable {
             serialSession.pushAndRead();
         }
         catch (NumberFormatException nfe) {
-            log.l("push error nfe: "+nfe.getStackTrace());
+            log.l("push error nfe: "+Arrays.toString(nfe.getStackTrace()));
             popup.infoAlert("Baudrate error!", "Integer expected");
         }
         catch(Exception e) {
-            log.l("push error: "+e.getStackTrace()+e.getCause());
-            popup.infoAlert("Error!", e.getStackTrace().toString());
+            log.l("push error: "+Arrays.toString(e.getStackTrace())+e.getCause());
+            popup.infoAlert("Error!", Arrays.toString(e.getStackTrace()));
         }
         finally {
             delay = new Delay();
@@ -210,13 +206,13 @@ public class FXMLDocumentController implements Initializable {
             }
             TaskManager.stop(executor);
         });
-        txtOutput.textProperty().addListener(new ChangeListener<Object>() {
-            @Override
-            public void changed(ObservableValue<?> observable, Object oldValue,
-                    Object newValue) {
-                log.l("textarea change!");
-                txtOutput.setScrollTop(Double.MIN_VALUE);
-            }
+        cboComs.setOnAction(e -> {
+            log.l("port change");
+            selectedPort = cboComs.getSelectionModel().getSelectedItem();
+        });
+        txtOutput.textProperty().addListener(
+                (ObservableValue<?> observable, Object oldValue, Object newValue) -> {
+            txtOutput.setScrollTop(Double.MIN_VALUE);
         });
         
         System.out.println("FXMLDocumentController initialize");

@@ -10,7 +10,7 @@ public class Serial {
     public static SerialPort[] availablePorts;
     public static SerialPort comPort;
     int baudRate;
-    private final int DEFAULT_BAUD = 9600;
+    private static final int DEFAULT_BAUD = 9600;
     byte[] command;
     Popup popup;
     Delay delay;
@@ -34,7 +34,7 @@ public class Serial {
         popup = new Popup();
     }
     public Serial(String port) {
-        this(port, 9600);
+        this(port, DEFAULT_BAUD);
     }
     public Serial(Runnable task) {
         task.run();
