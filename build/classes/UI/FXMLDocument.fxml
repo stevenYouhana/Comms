@@ -10,16 +10,33 @@
     xmlns:fx="http://javafx.com/fxml" alignment="center" hgap="20" vgap="20"
     styleClass="UI.Style.css" >
         
-        <Label id="lblPort" fx:id="lblPort" text="Com port:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-        <ComboBox fx:id="cboComs" promptText="select.." GridPane.columnIndex="1" GridPane.rowIndex="0" prefWidth="150"/>
+        <Label id="lblPort" fx:id="lblPort" text="Com port:" GridPane.columnIndex="0" 
+               GridPane.rowIndex="0" />
+        <ComboBox fx:id="cboComs" promptText="select.." GridPane.columnIndex="1" 
+                  GridPane.rowIndex="0" prefWidth="150"/>
         <Label fx:id="lblBaud" text="baud rate:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-        <TextField fx:id="txtBaud" promptText="9600"  GridPane.columnIndex="1" GridPane.rowIndex="2" /> 
-        <Button fx:id="btnConnect" text="Connect" onAction="#connect" GridPane.columnIndex="1" GridPane.rowIndex="3" prefWidth="150"/>
-        <Label fx:id="lblCommand" text="commmand:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+        <TextField fx:id="txtBaud" GridPane.columnIndex="1" GridPane.rowIndex="2" 
+            prefWidth="150" />
+            <HBox GridPane.columnIndex="3" GridPane.rowIndex="2">
+                <fx:define>
+                    <ToggleGroup fx:id="grpEndType"/>
+                </fx:define>
+                <children>
+                    <RadioButton text="LF" toggleGroup="$grpEndType" />
+                    <RadioButton text="CR/LF" toggleGroup="$grpEndType" />
+                </children>
+            </HBox>
+        <Button fx:id="btnConnect" text="Connect" onAction="#connect" GridPane.columnIndex="1"
+                GridPane.rowIndex="3" prefWidth="150" />
+        <Label fx:id="lblCommand" text="commmand:" GridPane.columnIndex="0" 
+               GridPane.rowIndex="4" />
         <TextField fx:id="txtCommand" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-        <Button fx:id="btnPush" text="Push" onAction="#push" GridPane.columnIndex="1" GridPane.rowIndex="5" prefWidth="150"  />
+        <Button fx:id="btnPush" text="Push" onAction="#push" GridPane.columnIndex="1" 
+                GridPane.rowIndex="5" prefWidth="150"  />
         <TextArea fx:id="txtOutput" GridPane.columnIndex="1" GridPane.rowIndex="6"  
                   wrapText="true" editable="false" promptText="output..." prefHeight="300"/>
-        <Hyperlink fx:id="advSettings" text="Advanced setting" onAction="#goToAdvSettings" GridPane.columnIndex="1" GridPane.rowIndex="7"/>
-        <Button fx:id="btnClear" text="Clear output" onAction="#clearOutput" GridPane.columnIndex="2" GridPane.rowIndex="7"/> 
+        <Hyperlink fx:id="advSettings" text="Advanced setting" onAction="#goToAdvSettings" 
+                   GridPane.columnIndex="1" GridPane.rowIndex="7" />
+        <Button fx:id="btnClear" text="Clear output" onAction="#clearOutput" 
+                GridPane.columnIndex="2" GridPane.rowIndex="7" /> 
 </GridPane>

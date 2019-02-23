@@ -19,7 +19,7 @@ public class Comms extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         Parent root = FXMLLoader.load(getClass().getResource("FXMLDocument.fxml"));
-        FXMLDocumentController cntrl = new FXMLDocumentController();
+        FXMLDocumentController cntrl = FXMLDocumentController.getInstance();
         
         Scene scene = new Scene(root);
         stage.setScene(scene);

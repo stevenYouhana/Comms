@@ -3,25 +3,24 @@ package UI;
 
 import Com.Log;
 import Com.Serial;
+import Handler.Delay;
 import Handler.Popup;
+import Handler.Tasks.SerialSession;
 import com.fazecast.jSerialComm.SerialPort;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.ResourceBundle;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.paint.Color;
 
 public class FXMLSerialSettingsController implements Initializable {
     Log log = new Log();
+    Delay delay = new Delay();
     Popup popup = new Popup();
-    private static final FXMLDocumentController MAIN_CTRL = new FXMLDocumentController();
     public FXMLSerialSettingsController() {}
     @FXML
     Button set;
@@ -38,30 +37,33 @@ public class FXMLSerialSettingsController implements Initializable {
     @FXML
     public void set() {
         try {
-            log.l("SEL P: "+MAIN_CTRL.selectedPort);
-            Serial.comPort = SerialPort.getCommPort(MAIN_CTRL.selectedPort);
-             if (!txtBRate.getText().isEmpty())
-                 Serial.comPort.setBaudRate(Integer.parseInt(txtBRate.getText()));
-             if (!txtDBits.getText().isEmpty())
-                 Serial.comPort.setNumDataBits(Integer.parseInt(txtDBits.getText()));
-             if  (!txtSBits.getText().isEmpty())
-                 Serial.comPort.setNumStopBits(Integer.parseInt(txtSBits.getText()));
-             Serial.comPort.setParity(Integer.parseInt(
-                     cboParity.getSelectionModel().getSelectedItem().toString()));
-             Serial.comPort.setFlowControl(flowControl(
-                     cboFCtrl.getSelectionModel().getSelectedItem().toString()));
-
-            SerialSettings.getInstance().hide();
-            MAIN_CTRL.connect();
+            SerialSession.connect(
+                    FXMLDocumentController.selectedPort, Integer.parseInt(
+                    txtBRate.getText()), FXMLDocumentController.getInstance());
+            Serial.comPort = SerialPort.getCommPort(FXMLDocumentController.selectedPort);
+            if (!txtBRate.getText().isEmpty())
+                Serial.comPort.setBaudRate(Integer.parseInt(txtBRate.getText()));
+            if (!txtDBits.getText().isEmpty())
+                Serial.comPort.setNumDataBits(Integer.parseInt(txtDBits.getText()));
+            if (!txtSBits.getText().isEmpty())
+                Serial.comPort.setNumStopBits(Integer.parseInt(txtSBits.getText()));
+                Serial.comPort.setParity(parity(
+                        cboParity.getSelectionModel().getSelectedItem().toString()));
+                Serial.comPort.setFlowControl(flowControl(
+                        cboFCtrl.getSelectionModel().getSelectedItem().toString()));
+                    log.l("delay to close");
+                    delay.by(50, () -> Platform.runLater( 
+                            SerialSettings.getInstance()::hide));
         }
-       catch (NumberFormatException nfe) {
-           if (txtBRate.getText().isEmpty()) 
-               txtBRate.setStyle("-fx-control-inner-background: #f2d91f;");
-           popup.infoAlert("Incorrect entries", Arrays.toString(nfe.getStackTrace()));
-       }
-       catch (Exception e) {
-           popup.errorMessage(Popup.SYSTEM_ERROR, e.toString());
-       }
+        catch (NumberFormatException nfe) {
+            if (txtBRate.getText().isEmpty())
+                FXMLDocumentController.Holder.noFieldSelection(txtBRate);
+            log.l(Arrays.toString(nfe.getStackTrace()));
+            popup.infoAlert("Incorrect entries", Arrays.toString(nfe.getStackTrace()));
+        }
+        catch (Exception e) {
+            popup.errorMessage(Popup.SYSTEM_ERROR, e.toString());
+        }
     }
     int flowControl(String fc) {
         switch (fc) {
