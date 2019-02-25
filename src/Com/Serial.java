@@ -20,17 +20,17 @@ public class Serial {
     }
     
     public Serial(String port, int baudRate) {
-        this.comPort = selectedCom(port);
+        comPort = selectedCom(port);
         this.baudRate = baudRate;
-        this.comPort.setBaudRate(baudRate);
+        comPort.setBaudRate(baudRate);
         comPort.setNumDataBits(8);
         comPort.setNumStopBits(1);
         comPort.setParity(0);
         comPort.setFlowControl(0);
-        
         comPort.setComPortTimeouts(SerialPort.TIMEOUT_SCANNER, 0, 0);
         comPort.openPort();
         log.l("Serial main constructor set");
+        log.l("Serial constructor: isOpen(): "+comPort.getSystemPortName()+" "+comPort.openPort());    
         popup = new Popup();
     }
     public Serial(String port) {

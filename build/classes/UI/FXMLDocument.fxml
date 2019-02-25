@@ -22,8 +22,8 @@
                     <ToggleGroup fx:id="grpEndType"/>
                 </fx:define>
                 <children>
-                    <RadioButton text="LF" toggleGroup="$grpEndType" />
-                    <RadioButton text="CR/LF" toggleGroup="$grpEndType" />
+                    <RadioButton fx:id="radLF" text="LF" toggleGroup="$grpEndType" />
+                    <RadioButton fx:id="radCRLF" text="CR/LF" toggleGroup="$grpEndType" />
                 </children>
             </HBox>
         <Button fx:id="btnConnect" text="Connect" onAction="#connect" GridPane.columnIndex="1"

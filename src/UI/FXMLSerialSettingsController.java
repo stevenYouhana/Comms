@@ -36,6 +36,7 @@ public class FXMLSerialSettingsController implements Initializable {
     ComboBox cboFCtrl;
     @FXML
     public void set() {
+        log.l("Set for "+FXMLDocumentController.selectedPort);
         try {
             SerialSession.connect(
                     FXMLDocumentController.selectedPort, Integer.parseInt(

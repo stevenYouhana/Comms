@@ -17,6 +17,8 @@ import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -24,8 +26,11 @@ import javafx.collections.ObservableList;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Hyperlink;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleGroup;
 import javafx.stage.Stage;
 /**
  *
@@ -46,7 +51,7 @@ public class FXMLDocumentController implements Initializable {
     public FXMLDocumentController() { instance = this; }
     
     public static class Holder {
-        public static  final String CBO_MSG = "choose.."; 
+        public static  final String CBO_MSG = "select.."; 
         public static  final String BTN_CONNECT = "Connect";
         public static final String BTN_DISCONNECT = "Disconnet";
         static final String CSS_NO_ENTRY = "-fx-background-color: #f2d91f;";
@@ -82,6 +87,13 @@ public class FXMLDocumentController implements Initializable {
     @FXML
     private Hyperlink advSettings;
     @FXML
+    private ToggleGroup grpEndType;
+    @FXML
+    private RadioButton radLF;
+    @FXML
+    private RadioButton radCRLF;
+    String LfCr = null;
+    @FXML
     public void connect() {
         selectedPort = cboComs.getSelectionModel().getSelectedItem();
         try {
@@ -90,6 +102,12 @@ public class FXMLDocumentController implements Initializable {
             if (selectedPort == null 
                     || selectedPort.isEmpty() 
                     || selectedPort.equals(Holder.CBO_MSG)) {
+                if (btnConnect.getText().equals(Holder.BTN_DISCONNECT)) {
+                    popup.errorMessage("Lost connection!", 
+                        "Port is either closed or disconnected. Closing session");
+                    setDisconnectedState();
+                    return;
+                }
                 Holder.noCboSelection(cboComs);
                 popup.infoAlert("Port error!", "Select a port");
                 return;
@@ -128,35 +146,30 @@ public class FXMLDocumentController implements Initializable {
         advSettings.setDisable(true);
     }
     public void setDisconnectedState() {
-        Serial.comPort.closePort();
         btnConnect.setText(Holder.BTN_CONNECT);
         txtBaud.setDisable(false);
         cboComs.setDisable(false);
         txtCommand.setDisable(true);
         btnPush.setDisable(true);
         advSettings.setDisable(false);
+        log.l("closing: "+serial.getPort().getSystemPortName());
+        Platform.runLater(serial.getPort()::closePort);
+        log.l(serial.getPort().getSystemPortName()+" isOpen(): "+serial.getPort().isOpen());
     }
-    public Button getBtnCon() {
-        return btnConnect;
-    }
-    public TextField getTxtCmd() {
-        return txtCommand;
-    }
-    public TextField getTxtBaud() {
-        return txtBaud;
-    }
-    public Button getBtnPush() {
-        return btnPush;
-    }
-    public ComboBox getCboComs() {
-        return cboComs;
-    }
-    
     @FXML
     private void push() throws InterruptedException {
         log.l("PUSH");
         try {
-            serialSession = new SerialSession(serial, txtCommand.getText()+'\n');
+            log.l("sel Port: "+selectedPort);
+            if (!Serial.comPort.isOpen() || Serial.comPort == null || 
+                    selectedPort == null || selectedPort.equals(Holder.CBO_MSG)) {
+                popup.errorMessage("Lost connection!", 
+                        "Port is either closed or disconnected. Closing session");
+                setDisconnectedState();
+                return;
+            }
+            serialSession = new SerialSession(
+                    serial, finalizeCommand(txtCommand.getText(), LfCr));
             serialSession.pushAndRead();
         }
         catch (NumberFormatException nfe) {
@@ -179,6 +192,10 @@ public class FXMLDocumentController implements Initializable {
                 }
             });
         }
+    }
+    private String finalizeCommand(String command, String LF_CR) {
+        //          CR = \r; LF = \n; CRLF = \r\n
+        return LF_CR.equals("CR/LF")? command+"\r\n": command+'\n';
     }
     private void refreshPorts() {
         clearPorts();
@@ -207,22 +224,63 @@ public class FXMLDocumentController implements Initializable {
     public ExecutorService getExecutor() {
         return executor;
     }
-    public void goToAdvSettings() throws Exception {
+    public void goToAdvSettings() {
         if (SerialSettings.showing == true) return;
         log.l("not showing -- should start");
-        if (cboComs.getSelectionModel().getSelectedItem().equals(Holder.CBO_MSG))
+        try {
+        if (cboComs
+                .getSelectionModel()
+                .getSelectedItem()
+                .equals(
+                        Holder.CBO_MSG))
             Holder.noCboSelection(cboComs);
         setting.start(stage);
+        } catch (NullPointerException npe) {
+            if (cboComs.getSelectionModel().getSelectedIndex() == -1) 
+                Holder.noCboSelection(cboComs);
+            npe.printStackTrace();
+        } catch (Exception ex) {
+            Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     public void clearOutput() {
         log.l("clearing output");
         txtOutput.clear();
         serialSession.output().delete(0, serialSession.output().length());
     }
+    public Button getBtnCon() {
+        return btnConnect;
+    }
+    public TextField getTxtCmd() {
+        return txtCommand;
+    }
+    public TextField getTxtBaud() {
+        return txtBaud;
+    }
+    public Button getBtnPush() {
+        return btnPush;
+    }
+    public ComboBox getCboComs() {
+        return cboComs;
+    }
+    
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         stage = new Stage();
         setting = SerialSettings.getInstance();
+        radLF.setToggleGroup(grpEndType);
+        radCRLF.setToggleGroup(grpEndType);
+        grpEndType.selectedToggleProperty().addListener((
+                ObservableValue<? extends Toggle> ob, Toggle o, Toggle n) -> {
+                    RadioButton rb1 = (RadioButton)grpEndType.getSelectedToggle();
+                    if (rb1 != null) {
+                        LfCr = rb1.getText();
+                    } 
+                });
+        radLF.setSelected(true);
+        txtCommand.setDisable(true);
+        btnPush.setDisable(true);
+        
         ExecutorService executor = Executors.newSingleThreadExecutor(
             new ThreadFactory() {
                 @Override
@@ -232,9 +290,6 @@ public class FXMLDocumentController implements Initializable {
                 }
             }
         );
-        txtCommand.setDisable(true);
-        btnPush.setDisable(true);
-        
         executor.submit(() -> {
             while (!Comms.MainWindowClosed) {
                 if (availablePorts.size() <= 0) {

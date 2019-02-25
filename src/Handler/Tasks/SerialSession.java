@@ -6,7 +6,6 @@ import Com.Serial;
 import Handler.Popup;
 import static Handler.Tasks.TaskManager.log;
 import UI.FXMLDocumentController;
-import static UI.FXMLDocumentController.serial;
 import java.util.Arrays;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -24,6 +23,7 @@ public class SerialSession extends TaskManager {
     }
     public static void connect(String port, int baud, FXMLDocumentController cntrl) {
         try {
+            log.l("hash code: "+cntrl.toString());
             if (cntrl.getBtnCon().getText().equals(FXMLDocumentController
                     .Holder.BTN_CONNECT)) {
                 log.l("connect");
@@ -31,20 +31,25 @@ public class SerialSession extends TaskManager {
                 try {
                     log.l("COM: "+port);
                     log.l("BAUD: "+baud);
+                    log.l("btn text: "+cntrl.getBtnCon().getText());
                     if (port == null 
                             || port.isEmpty() 
                             || port.equals(FXMLDocumentController.Holder.CBO_MSG)) {
                         popup.infoAlert("Port error!", "Select a port");
+                        log.l("cntrl.setDisconnectedState(); CALLED!");
+                        cntrl.setDisconnectedState();
                         return;
                     }
                     if (port.isEmpty()) {
                         popup.infoAlert("Baudrate error!", "Set baudrate");
+                        cntrl.setDisconnectedState();
                         return;
                     }
                 }
                 catch (NumberFormatException nfe) {
                     log.l("push error nfe: "+Arrays.toString(nfe.getStackTrace()));
                     popup.infoAlert("Baudrate error!", "Integer expected");
+                    cntrl.setDisconnectedState();
                     return;
                 }
                 catch (Exception e) {
@@ -52,8 +57,11 @@ public class SerialSession extends TaskManager {
                     popup.infoAlert("Error!", Arrays.toString(e.getStackTrace()));
                     return;
                 }
+                
                 FXMLDocumentController.serial = new Serial(port, baud);
                 if (!Serial.comPort.isOpen()) {
+                    log.l("SerialSession::connect() if !Serial.comPort.isOpen()");
+                    log.l(Serial.comPort.getSystemPortName()+ " is open: "+Serial.comPort.isOpen());
                     popup.errorMessage("Error", 
                             Serial.comPort.getSystemPortName()+ " is busy");
                     return;
@@ -61,6 +69,9 @@ public class SerialSession extends TaskManager {
                 cntrl.setConnectedState();
             }
             else {
+                // *******HANDLE LOSS CONNECTION! *********
+                log.l("setDisconnectedState() called");
+                log.l("btn text: "+cntrl.getBtnCon().getText());
                 cntrl.setDisconnectedState();
             }
         } catch (NullPointerException npe) {
