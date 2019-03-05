@@ -17,7 +17,7 @@ fx:controller="UI.FXMLSerialSettingsController">
     <TextField fx:id="txtBRate" GridPane.columnIndex="1" GridPane.rowIndex="0" />
     <TextField fx:id="txtDBits" GridPane.columnIndex="1" GridPane.rowIndex="1" />
     <TextField fx:id="txtSBits" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-    <TextField fx:id="txtParity" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-    <TextField fx:id="txtFCtrl" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+    <ComboBox fx:id="cboParity" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+    <ComboBox fx:id="cboFCtrl" GridPane.columnIndex="1" GridPane.rowIndex="4" />
     <Button fx:id="btnSet" onAction="#set" text="Ok" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
 </GridPane>

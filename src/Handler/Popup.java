@@ -9,6 +9,7 @@ public class Popup {
     private Alert alert;
     private final String INFO_ALERT = "Info";
     private final String ERROR_MESSAGE = "Error";
+    public final static String SYSTEM_ERROR = "System Error";
     
     public void infoAlert(String headerText, String context) {
         log.l("infoAlert()");
