@@ -8,54 +8,65 @@ import java.io.InputStream;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.application.Platform;
 
 public class SimpleSerial {
     
     public static void main(String[] args) throws IOException {
-        Log log = new Log();
-        SerialPort port = SerialPort.getCommPort("COM2");
-        port.setBaudRate(9600);
-        port.openPort();
-        Scanner scanner = new Scanner(System.in);
-        String input = "";
-        
-        byte[] bytes = null;
-        InputStream in = port.getInputStream();
-        
         new Thread(() -> {
-            log.l("new THREAD");
+            Log log = new Log();
+            SerialPort port = SerialPort.getCommPort("COM2");
+            port.setBaudRate(9600);
+            Scanner scanner = new Scanner(System.in);        
+            byte[] bytes = null;
+            InputStream in;
+            String input = "";
             String output = "";
-            while (port.isOpen()) {
-                try {
-                    if(port.getInputStream().available() > 0) {
-                        for (int i=0; i<in.available(); i++) {
-                          output += (char)in.read();
-                       }
-                    }
-                } catch (IOException ioe) {
-                    ioe.printStackTrace();
-                }
-                try {
-                    Thread.sleep(1000);
-                    log.l("RX: "+output);
-                    port.getOutputStream().flush();
-                    output = "";
-                } catch (InterruptedException ie) {
-                    ie.printStackTrace();
-                } catch (IOException ex) {
-                    Logger.getLogger(SimpleSerial.class.getName()).log(Level.SEVERE, null, ex);
-                }    
-            }
-        }).start();
-        log.l("into the while");
-        while (port.isOpen()) {
-            input += scanner.nextLine();
-            if (input.endsWith("0"))
-            {
-                log.l("TX");
-                port.getOutputStream().write(input.getBytes());
+            log.l("new THREAD");
+            while (!port.isOpen()) {
+                log.l("!port.isOpen()");
                 input = "";
+                output = "";
+                input += scanner.nextLine();    //RUN SEPARATELY******+
+                if (input.equals("OPEN PORT")) {
+                    log.l("OPEN PORT");
+                    port.openPort();
+                }
+                log.l("check port stat: "+port.isOpen());
+                while (port.isOpen()) {
+                   in = port.getInputStream();
+                   log.l("while (port.isOpen())");
+                   input = "";
+                    try {
+                        if(port.getInputStream().available() > 0) {
+                            for (int i=0; i<in.available(); i++) {
+                              output += (char)in.read();
+                              log.l("FOR LOOP");
+                            }
+                        }
+                        input += scanner.nextLine();
+                        if (input.equals("CLOSE PORT")) {
+                            log.l("CLOSE PORT");
+                            port.getOutputStream().write(input.getBytes());
+                            port.closePort();
+                            Platform.exit();
+                            System.exit(0);
+                        }
+                        Thread.sleep(200);
+                        log.l("sending: "+input);
+                        log.l("RX: "+output);
+//                        port.getOutputStream().flush();
+                        output = "";
+                    } catch (IOException ioe) {
+                        ioe.printStackTrace();
+                    }
+                    catch (InterruptedException ie) {
+                        ie.printStackTrace();
+                    }
+                    log.l("END WHILE OPEN");
+                }
             }
-        }
+            
+        }).start();
     }
 }
