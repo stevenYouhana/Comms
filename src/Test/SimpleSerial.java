@@ -11,32 +11,45 @@ import java.util.logging.Logger;
 import javafx.application.Platform;
 
 public class SimpleSerial {
+    static volatile String input = "";
+    static Log log = new Log();
+    synchronized static void setInput(String input) {
+        SimpleSerial.input = input;
+    }
     
     public static void main(String[] args) throws IOException {
         new Thread(() -> {
-            Log log = new Log();
+            log.l("Scanner thread.........");
+            Scanner scanner = new Scanner(System.in);
+            while (true) {
+                setInput(input = scanner.nextLine());
+            }
+        }).start();
+        
+        new Thread(() -> {
             SerialPort port = SerialPort.getCommPort("COM2");
             port.setBaudRate(9600);
-            Scanner scanner = new Scanner(System.in);        
             byte[] bytes = null;
             InputStream in;
-            String input = "";
             String output = "";
             log.l("new THREAD");
             while (!port.isOpen()) {
-                log.l("!port.isOpen()");
-                input = "";
-                output = "";
-                input += scanner.nextLine();    //RUN SEPARATELY******+
+//                if (input.contains(input))
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(SimpleSerial.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                log.l(input);
                 if (input.equals("OPEN PORT")) {
                     log.l("OPEN PORT");
                     port.openPort();
                 }
+//                setInput("");
                 log.l("check port stat: "+port.isOpen());
                 while (port.isOpen()) {
                    in = port.getInputStream();
-                   log.l("while (port.isOpen())");
-                   input = "";
+                   log.l(input);
                     try {
                         if(port.getInputStream().available() > 0) {
                             for (int i=0; i<in.available(); i++) {
@@ -44,18 +57,17 @@ public class SimpleSerial {
                               log.l("FOR LOOP");
                             }
                         }
-                        input += scanner.nextLine();
                         if (input.equals("CLOSE PORT")) {
                             log.l("CLOSE PORT");
                             port.getOutputStream().write(input.getBytes());
                             port.closePort();
-                            Platform.exit();
-                            System.exit(0);
+                            break;
                         }
-                        Thread.sleep(200);
-                        log.l("sending: "+input);
+                        port.getOutputStream().write(input.getBytes());
+                        Thread.sleep(500);
+//                        log.l("sending: "+input);
                         log.l("RX: "+output);
-//                        port.getOutputStream().flush();
+                        port.getOutputStream().flush();
                         output = "";
                     } catch (IOException ioe) {
                         ioe.printStackTrace();
@@ -63,10 +75,8 @@ public class SimpleSerial {
                     catch (InterruptedException ie) {
                         ie.printStackTrace();
                     }
-                    log.l("END WHILE OPEN");
                 }
             }
-            
         }).start();
     }
 }
