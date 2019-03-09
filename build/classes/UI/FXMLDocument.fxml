@@ -28,6 +28,8 @@
             </HBox>
         <Button fx:id="btnConnect" text="Connect" onAction="#connect" GridPane.columnIndex="1"
                 GridPane.rowIndex="3" prefWidth="150" />
+        <Button fx:id="btnDisConnect" text="DisConnect" onAction="#disConnect" GridPane.columnIndex="2"
+                GridPane.rowIndex="3" prefWidth="150" />
         <Label fx:id="lblCommand" text="commmand:" GridPane.columnIndex="0" 
                GridPane.rowIndex="4" />
         <TextField fx:id="txtCommand" GridPane.columnIndex="1" GridPane.rowIndex="4" />

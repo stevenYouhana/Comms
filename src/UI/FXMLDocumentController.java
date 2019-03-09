@@ -11,7 +11,9 @@ import Handler.Delay;
 import Handler.Tasks.TaskManager;
 import Handler.Tasks.SerialSession;
 import Handler.Popup;
+import Handler.Tasks.SerialTask;
 import com.fazecast.jSerialComm.SerialPort;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
@@ -93,48 +95,41 @@ public class FXMLDocumentController implements Initializable {
     @FXML
     private RadioButton radCRLF;
     String LfCr = null;
+    SerialTask srTask;
+    ExecutorService srl_tasks = Executors.newFixedThreadPool(2);
     @FXML
     public void connect() {
         selectedPort = cboComs.getSelectionModel().getSelectedItem();
-        try {
-            log.l("COM: "+selectedPort);
-            log.l("BAUD: "+txtBaud.getText());
-            if (selectedPort == null 
-                    || selectedPort.isEmpty() 
-                    || selectedPort.equals(Holder.CBO_MSG)) {
-                if (btnConnect.getText().equals(Holder.BTN_DISCONNECT)) {
-                    popup.errorMessage("Lost connection!", 
-                        "Port is either closed or disconnected. Closing session");
-                    setDisconnectedState();
-                    return;
+        srTask = new SerialTask(selectedPort);
+        if (!srl_tasks.isTerminated()) {
+            TaskManager.stop(srl_tasks);
+            log.l("connect: if (!srl_tasks.isTerminated()) ");
+            srl_tasks = Executors.newFixedThreadPool(3);
+        }
+        srl_tasks.submit(() -> srTask.session());
+        srl_tasks.submit(() -> srTask.output());
+        srl_tasks.submit(() -> {
+            while (srTask.portIsOpen()) {
+                    log.l("connect: synchronized(SerialTask.lock) ");
+              
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                        Logger.getLogger(FXMLDocumentController.class.getName())
+                                .log(Level.SEVERE, null, ex);
+                    }
+                    log.l("connect while (true)");
+                    log.l("continue txtOutput.setText");
+                    txtOutput.setText(txtOutput.getText() + srTask.read());
                 }
-                Holder.noCboSelection(cboComs);
-                popup.infoAlert("Port error!", "Select a port");
-                return;
-            }
-            else if (txtBaud.getText().isEmpty()) {
-                Holder.noFieldSelection(txtBaud);
-                popup.infoAlert("Baudrate error!", "Set baudrate");
-                return;
-            }
-            else {
-                Holder.reset_fields(cboComs, txtBaud);
-                SerialSession.connect(
-                        selectedPort, Integer.parseInt(txtBaud.getText()), instance);
-            }
-        }
-        catch (NullPointerException npe) {
-            log.l("push error nfe: "+Arrays.toString(npe.getStackTrace()));
-            popup.infoAlert("Null", npe.getMessage());
-        }
-        catch (NumberFormatException nfe) {
-            log.l("push error nfe: "+Arrays.toString(nfe.getStackTrace()));
-            popup.infoAlert("Baudrate error!", "Integer expected");
-        }
-        catch (Exception e) {
-            log.l("Connetion error: "+Arrays.toString(e.getStackTrace())+e.getCause());
-            popup.infoAlert("Connetion Error!", Arrays.toString(e.getStackTrace()));
-        }
+            
+        });
+    }
+    @FXML void disConnect() {
+        srTask.stopPort();
+//        TaskManager.stop(srl_tasks);
+//        log.l("task stopped");
     }
     public void setConnectedState() {
         btnConnect.setText(Holder.BTN_DISCONNECT);
@@ -157,41 +152,9 @@ public class FXMLDocumentController implements Initializable {
         log.l(serial.getPort().getSystemPortName()+" isOpen(): "+serial.getPort().isOpen());
     }
     @FXML
-    private void push() throws InterruptedException {
+    private void push() throws IOException {
         log.l("PUSH");
-        try {
-            log.l("sel Port: "+selectedPort);
-            if (!Serial.comPort.isOpen() || Serial.comPort == null || 
-                    selectedPort == null || selectedPort.equals(Holder.CBO_MSG)) {
-                popup.errorMessage("Lost connection!", 
-                        "Port is either closed or disconnected. Closing session");
-                setDisconnectedState();
-                return;
-            }
-            serialSession = new SerialSession(
-                    serial, finalizeCommand(txtCommand.getText(), LfCr));
-            serialSession.pushAndRead();
-        }
-        catch (NumberFormatException nfe) {
-            log.l("push error nfe: "+Arrays.toString(nfe.getStackTrace()));
-            popup.infoAlert("Baudrate error!", "Integer expected");
-        }
-        catch(Exception e) {
-            log.l("push error: "+Arrays.toString(e.getStackTrace())+e.getCause());
-            popup.infoAlert("Error!", Arrays.toString(e.getStackTrace()));
-        }
-        finally {
-            delay = new Delay();
-            delay.by(1000, () -> {
-                try {
-                log.l("set output to "+serialSession.output());
-                    txtOutput.appendText(serialSession.output().toString());
-                    txtOutput.setScrollTop(Double.MIN_VALUE);
-                } finally {
-                    return null;
-                }
-            });
-        }
+        srTask.pushCommand(finalizeCommand(txtCommand.getText(), LfCr));
     }
     private String finalizeCommand(String command, String LF_CR) {
         //          CR = \r; LF = \n; CRLF = \r\n

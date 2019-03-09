@@ -30,14 +30,14 @@ public class Delay {
             @Override
             public void run() {
                 log.l("delaying by "+ms);
-//                try {
+                try {
                     func.run();
-//                } catch (Exception ex) {
-////                    System.out.println("delay by"+ex.getStackTrace());
-//                    Platform.runLater(() -> popup.infoAlert("Error!", "delay by(): "));
-//                    log.l("Err delay run");
-//                    ex.getStackTrace();
-//                }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    Platform.runLater(() -> popup.infoAlert("Error!", "delay by(): "));
+                    log.l("Err delay run");
+                    ex.getStackTrace();
+                }
             }
         }, ms);
     }
