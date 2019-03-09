@@ -33,7 +33,7 @@ public class Comms extends Application {
             stage.close();
             Platform.exit();
             try {
-                if (Serial.comPort.isOpen()) Serial.comPort.closePort();
+                if (cntrl.getSerialTask().portIsOpen()) cntrl.setDisconnectedState();
             } catch (NullPointerException npe) {
                 delay.by(1000, () -> System.exit(0));
             }

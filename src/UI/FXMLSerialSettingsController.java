@@ -5,11 +5,16 @@ import Com.Log;
 import Com.Serial;
 import Handler.Delay;
 import Handler.Popup;
+import Handler.Tasks.Connectable;
 import Handler.Tasks.SerialSession;
+import Handler.Tasks.SerialTask;
+import Handler.Tasks.TaskManager;
+import static UI.FXMLDocumentController.selectedPort;
 import com.fazecast.jSerialComm.SerialPort;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.ResourceBundle;
+import java.util.concurrent.Executors;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -17,11 +22,12 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 
-public class FXMLSerialSettingsController implements Initializable {
+public class FXMLSerialSettingsController extends FXMLDocumentController
+        implements Initializable, Connectable {
     Log log = new Log();
     Delay delay = new Delay();
     Popup popup = new Popup();
-    public FXMLSerialSettingsController() {}
+    private final SerialTask.Advanced_Setting adv_set = new SerialTask.Advanced_Setting();
     @FXML
     Button set;
     @FXML
@@ -34,35 +40,60 @@ public class FXMLSerialSettingsController implements Initializable {
     ComboBox cboParity;
     @FXML
     ComboBox cboFCtrl;
-    @FXML
+    
+    
+    public FXMLSerialSettingsController() {}
+    
+    
+    @Override
+    public void session() {
+        if (txtBRate.getText().isEmpty())
+//            return;
+        if (txtDBits.getText().isEmpty())
+//            return;
+        if (txtSBits.getText().isEmpty())
+//            return;
+        log.l("Adv::session()");
+        log.l("goToAdvSettings()"+selectedPort);
+//        log.l("SELEL "+cboComs.getSelectionModel().getSelectedItem());
+//        selectedPort = cboComs.getSelectionModel().getSelectedItem();
+        int baud = Integer.parseInt(txtBRate.getText());
+        srTask = new SerialTask(selectedPort, baud);
+        
+        adv_set.setAdvancedVariables(baud, 
+                Integer.parseInt(txtDBits.getText()), 
+                Integer.parseInt(txtSBits.getText()),
+                parity(cboParity.getSelectionModel().getSelectedItem().toString()),
+                flowControl(
+                        cboFCtrl.getSelectionModel().getSelectedItem().toString())
+        );
+        if (!srl_tasks.isTerminated()) {
+            TaskManager.stop(srl_tasks);
+            log.l("connect: if (!srl_tasks.isTerminated()) ");
+            srl_tasks = Executors.newFixedThreadPool(3);
+        }
+        srl_tasks.submit(() -> {
+            srTask.output();
+            srTask.session(txtOutput);
+        });    
+    }
+    
     public void set() {
         log.l("Set for "+FXMLDocumentController.selectedPort);
         try {
-            SerialSession.connect(
-                    FXMLDocumentController.selectedPort, Integer.parseInt(
-                    txtBRate.getText()), FXMLDocumentController.getInstance());
-            Serial.comPort = SerialPort.getCommPort(FXMLDocumentController.selectedPort);
-            if (!txtBRate.getText().isEmpty())
-                Serial.comPort.setBaudRate(Integer.parseInt(txtBRate.getText()));
-            if (!txtDBits.getText().isEmpty())
-                Serial.comPort.setNumDataBits(Integer.parseInt(txtDBits.getText()));
-            if (!txtSBits.getText().isEmpty())
-                Serial.comPort.setNumStopBits(Integer.parseInt(txtSBits.getText()));
-                Serial.comPort.setParity(parity(
-                        cboParity.getSelectionModel().getSelectedItem().toString()));
-                Serial.comPort.setFlowControl(flowControl(
-                        cboFCtrl.getSelectionModel().getSelectedItem().toString()));
-                    log.l("delay to close");
-                    delay.by(50, () -> Platform.runLater( 
-                            SerialSettings.getInstance()::hide));
+                session();
+                log.l("delay to close");
+                delay.by(50, () -> Platform.runLater( 
+                        SerialSettings.getInstance()::hide));
         }
         catch (NumberFormatException nfe) {
             if (txtBRate.getText().isEmpty())
                 FXMLDocumentController.Holder.noFieldSelection(txtBRate);
-            log.l(Arrays.toString(nfe.getStackTrace()));
+            nfe.printStackTrace();
             popup.infoAlert("Incorrect entries", Arrays.toString(nfe.getStackTrace()));
         }
         catch (Exception e) {
+            e.printStackTrace();
             popup.errorMessage(Popup.SYSTEM_ERROR, e.toString());
         }
     }

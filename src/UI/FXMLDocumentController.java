@@ -11,6 +11,7 @@ import Handler.Delay;
 import Handler.Tasks.TaskManager;
 import Handler.Tasks.SerialSession;
 import Handler.Popup;
+import Handler.Tasks.Connectable;
 import Handler.Tasks.SerialTask;
 import com.fazecast.jSerialComm.SerialPort;
 import java.io.IOException;
@@ -38,7 +39,7 @@ import javafx.stage.Stage;
  *
  * @author steven.youhana
  */
-public class FXMLDocumentController implements Initializable {
+public class FXMLDocumentController implements Initializable, Connectable {
     private static FXMLDocumentController instance = null;
     public static Serial serial;
     String port;
@@ -48,9 +49,27 @@ public class FXMLDocumentController implements Initializable {
     ExecutorService executor;
     Delay delay;
     SerialSession serialSession;
-
-    public volatile static String selectedPort = null;
+    SerialTask srTask;
+    ExecutorService srl_tasks = Executors.newFixedThreadPool(2);
+    
+    public static String selectedPort;
     public FXMLDocumentController() { instance = this; }
+
+    @Override
+    public void session() {
+        selectedPort = cboComs.getSelectionModel().getSelectedItem();
+        int baud = Integer.parseInt(txtBaud.getText());
+        srTask = new SerialTask(selectedPort, baud);
+        if (!srl_tasks.isTerminated()) {
+            TaskManager.stop(srl_tasks);
+            log.l("connect: if (!srl_tasks.isTerminated()) ");
+            srl_tasks = Executors.newFixedThreadPool(3);
+        }
+        srl_tasks.submit(() -> {
+            srTask.output();
+            srTask.session(txtOutput);
+        });    
+    }
     
     public static class Holder {
         public static  final String CBO_MSG = "select.."; 
@@ -75,58 +94,32 @@ public class FXMLDocumentController implements Initializable {
     Stage stage;
     SerialSettings setting;
     @FXML
-    private ComboBox<String> cboComs;
+    protected ComboBox<String> cboComs;
     @FXML
-    private TextField txtBaud;
+    protected TextField txtBaud;
     @FXML
-    private TextField txtCommand;
+    protected TextField txtCommand;
     @FXML
-    private TextArea txtOutput;
+    protected TextArea txtOutput;
     @FXML
-    private Button btnConnect;
+    protected Button btnConnect;
     @FXML
-    private Button btnPush;
+    protected Button btnPush;
     @FXML
-    private Hyperlink advSettings;
+    protected Hyperlink advSettings;
     @FXML
-    private ToggleGroup grpEndType;
+    protected ToggleGroup grpEndType;
     @FXML
-    private RadioButton radLF;
+    protected RadioButton radLF;
     @FXML
-    private RadioButton radCRLF;
+    protected RadioButton radCRLF;
     String LfCr = null;
-    SerialTask srTask;
-    ExecutorService srl_tasks = Executors.newFixedThreadPool(2);
     @FXML
     public void connect() {
-        selectedPort = cboComs.getSelectionModel().getSelectedItem();
-        srTask = new SerialTask(selectedPort);
-        if (!srl_tasks.isTerminated()) {
-            TaskManager.stop(srl_tasks);
-            log.l("connect: if (!srl_tasks.isTerminated()) ");
-            srl_tasks = Executors.newFixedThreadPool(3);
-        }
-        srl_tasks.submit(() -> srTask.session());
-        srl_tasks.submit(() -> srTask.output());
-        srl_tasks.submit(() -> {
-            while (srTask.portIsOpen()) {
-                    log.l("connect: synchronized(SerialTask.lock) ");
-              
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException ex) {
-                        ex.printStackTrace();
-                        Logger.getLogger(FXMLDocumentController.class.getName())
-                                .log(Level.SEVERE, null, ex);
-                    }
-                    log.l("connect while (true)");
-                    log.l("continue txtOutput.setText");
-                    txtOutput.setText(txtOutput.getText() + srTask.read());
-                }
-            
-        });
+        session();
     }
     @FXML void disConnect() {
+        log.l("disConnect(): "+srTask.toString());
         srTask.stopPort();
 //        TaskManager.stop(srl_tasks);
 //        log.l("task stopped");
@@ -148,8 +141,11 @@ public class FXMLDocumentController implements Initializable {
         btnPush.setDisable(true);
         advSettings.setDisable(false);
         log.l("closing: "+serial.getPort().getSystemPortName());
-        Platform.runLater(serial.getPort()::closePort);
+        srTask.stopPort();
         log.l(serial.getPort().getSystemPortName()+" isOpen(): "+serial.getPort().isOpen());
+    }
+    public SerialTask getSerialTask() {
+        return srTask;
     }
     @FXML
     private void push() throws IOException {
@@ -190,20 +186,22 @@ public class FXMLDocumentController implements Initializable {
     public void goToAdvSettings() {
         if (SerialSettings.showing == true) return;
         log.l("not showing -- should start");
+        selectedPort = cboComs.getSelectionModel().getSelectedItem();
+        log.l("goToAdvSettings()"+selectedPort);
         try {
-        if (cboComs
-                .getSelectionModel()
-                .getSelectedItem()
-                .equals(
-                        Holder.CBO_MSG))
-            Holder.noCboSelection(cboComs);
-        setting.start(stage);
+            if (cboComs
+                    .getSelectionModel()
+                    .getSelectedItem()
+                    .equals(
+                            Holder.CBO_MSG))
+                Holder.noCboSelection(cboComs);
+            setting.start(stage);
         } catch (NullPointerException npe) {
             if (cboComs.getSelectionModel().getSelectedIndex() == -1) 
                 Holder.noCboSelection(cboComs);
             npe.printStackTrace();
         } catch (Exception ex) {
-            Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         }
     }
     public void clearOutput() {
