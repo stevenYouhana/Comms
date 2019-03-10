@@ -50,7 +50,7 @@ public class FXMLDocumentController implements Initializable, Connectable {
     Delay delay;
     SerialSession serialSession;
     SerialTask srTask;
-    ExecutorService srl_tasks = Executors.newFixedThreadPool(2);
+    ExecutorService srl_tasks = Executors.newFixedThreadPool(3);
     
     public static String selectedPort;
     public FXMLDocumentController() { instance = this; }
@@ -63,14 +63,31 @@ public class FXMLDocumentController implements Initializable, Connectable {
         if (!srl_tasks.isTerminated()) {
             TaskManager.stop(srl_tasks);
             log.l("connect: if (!srl_tasks.isTerminated()) ");
-            srl_tasks = Executors.newFixedThreadPool(3);
+            srl_tasks = Executors.newFixedThreadPool(4);
         }
         srl_tasks.submit(() -> {
-            srTask.output();
-            srTask.session(txtOutput);
-        });    
+            srTask.session();
+        });
+//        srl_tasks.submit(() -> Mediator.run());
+        srl_tasks.submit(() -> {
+           readTask();
+        });
     }
-    
+    public void readTask() {
+        log.l("readTask()");
+         do {
+                synchronized (SerialTask.lock) {
+                try{
+                    SerialTask.lock.wait();
+                } catch (InterruptedException ie) {
+                    ie.printStackTrace();
+                }
+                log.l("readTask notified!");
+                txtOutput.clear();
+                txtOutput.setText(Mediator.output);
+                }
+            } while (srTask.portIsOpen());
+    }
     public static class Holder {
         public static  final String CBO_MSG = "select.."; 
         public static  final String BTN_CONNECT = "Connect";
@@ -114,6 +131,7 @@ public class FXMLDocumentController implements Initializable, Connectable {
     @FXML
     protected RadioButton radCRLF;
     String LfCr = null;
+    protected String message = "mother message";
     @FXML
     public void connect() {
         session();
@@ -184,18 +202,44 @@ public class FXMLDocumentController implements Initializable, Connectable {
         return executor;
     }
     public void goToAdvSettings() {
+        ExecutorService task = Executors.newFixedThreadPool(2);
         if (SerialSettings.showing == true) return;
         log.l("not showing -- should start");
         selectedPort = cboComs.getSelectionModel().getSelectedItem();
         log.l("goToAdvSettings()"+selectedPort);
-        try {
-            if (cboComs
+        if (cboComs
                     .getSelectionModel()
                     .getSelectedItem()
-                    .equals(
-                            Holder.CBO_MSG))
-                Holder.noCboSelection(cboComs);
+                    .equals(Holder.CBO_MSG)) Holder.noCboSelection(cboComs);
+        try {
             setting.start(stage);
+            task.submit(() -> {
+                log.l("srTask.session();");
+                srTask.session();
+            
+            });
+
+            task.submit(() -> {
+                log.l("task.submit(() -> {");
+                while (true) {
+                    try {
+                        if (SerialSettings.showing == false) {
+                            log.l("SerialSettings.showing == false");
+                            TaskManager.stop(task);
+                            break;
+                        }
+                        else {
+                            log.l("adv setting WHILE::CLOSED");
+
+                                Thread.sleep(1000);
+                            readTask();
+                        }
+                    } catch (InterruptedException ie) {
+                            ie.printStackTrace();
+                    }
+                } log.l("adv set WHILE TERMINTAED");
+            });
+            
         } catch (NullPointerException npe) {
             if (cboComs.getSelectionModel().getSelectedIndex() == -1) 
                 Holder.noCboSelection(cboComs);

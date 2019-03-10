@@ -44,19 +44,14 @@ public class FXMLSerialSettingsController extends FXMLDocumentController
     
     public FXMLSerialSettingsController() {}
     
-    
     @Override
     public void session() {
-        if (txtBRate.getText().isEmpty())
-//            return;
-        if (txtDBits.getText().isEmpty())
-//            return;
-        if (txtSBits.getText().isEmpty())
-//            return;
-        log.l("Adv::session()");
-        log.l("goToAdvSettings()"+selectedPort);
-//        log.l("SELEL "+cboComs.getSelectionModel().getSelectedItem());
-//        selectedPort = cboComs.getSelectionModel().getSelectedItem();
+//        if (txtBRate.getText().isEmpty())
+////            return;
+//        if (txtDBits.getText().isEmpty())
+////            return;
+//        if (txtSBits.getText().isEmpty())
+////            return;
         int baud = Integer.parseInt(txtBRate.getText());
         srTask = new SerialTask(selectedPort, baud);
         
@@ -67,25 +62,25 @@ public class FXMLSerialSettingsController extends FXMLDocumentController
                 flowControl(
                         cboFCtrl.getSelectionModel().getSelectedItem().toString())
         );
-        if (!srl_tasks.isTerminated()) {
-            TaskManager.stop(srl_tasks);
-            log.l("connect: if (!srl_tasks.isTerminated()) ");
-            srl_tasks = Executors.newFixedThreadPool(3);
-        }
-        srl_tasks.submit(() -> {
-            srTask.output();
-            srTask.session(txtOutput);
-        });    
+//        if (!srl_tasks.isTerminated()) {
+//            TaskManager.stop(srl_tasks);
+//            log.l("connect: if (!srl_tasks.isTerminated()) ");
+//            srl_tasks = Executors.newFixedThreadPool(3);
+//        }
+//        srl_tasks.submit(() -> {
+//            log.l("ADV TEST: "+srTask.toString());
+//            srTask.session();
+//        });
+//        srl_tasks.submit(() -> Mediator.run());
     }
-    
     public void set() {
         log.l("Set for "+FXMLDocumentController.selectedPort);
         try {
-                session();
+                this.session();
                 log.l("delay to close");
                 delay.by(50, () -> Platform.runLater( 
                         SerialSettings.getInstance()::hide));
-        }
+          }
         catch (NumberFormatException nfe) {
             if (txtBRate.getText().isEmpty())
                 FXMLDocumentController.Holder.noFieldSelection(txtBRate);
